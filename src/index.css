@@ -1,0 +1,40 @@
+/* Variables globales — même bleu que le thème MUI (src/theme/muiTheme.js) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blue-950: #172554;
+  --blue-900: #1e3a8a;
+  --blue-800: #1e40af;
+  --blue-700: #1d4ed8;
+  --blue-600: #2563eb;
+  --blue-500: #3b82f6;
+  --blue-400: #60a5fa;
+  --gradient-blue-hero: linear-gradient(
+    135deg,
+    var(--blue-900) 0%,
+    var(--blue-700) 45%,
+    var(--blue-600) 100%
+  );
+  --gradient-blue-page: linear-gradient(
+    160deg,
+    var(--blue-950) 0%,
+    var(--blue-800) 35%,
+    var(--blue-600) 70%,
+    var(--blue-500) 100%
+  );
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
