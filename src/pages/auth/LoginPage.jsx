@@ -26,10 +26,21 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(form);
-      navigate("/");
+      const res = await login(form);
+      console.log("Login response:", res); // Debug : vérifier la réponse du login
+      const role = res.role; // <-- ici, pas res.user.role
+
+      if (role === "Proprietaire") {
+        navigate("/dashboard/proprietaire");
+      } else if (role === "Moniteur") {
+        navigate("/dashboard/moniteur");
+      } else if (role === "Secretaire") {
+        navigate("/dashboard/secretaire"); // Candidat
+      } else {
+        navigate("/"); // fallback
+      }
     } catch {
-      alert("Erreur de connexion");
+      alert("Erreur de connexion : identifiant ou mot de passe incorrect");
     }
   };
 

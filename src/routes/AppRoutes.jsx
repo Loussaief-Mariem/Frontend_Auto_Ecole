@@ -9,6 +9,7 @@ import DashboardLayout from "../components/common/dashboard/DashboardLayout";
 import HomeMoniteur from "../pages/Dashboard/Moniteur/HomeMoniteur";
 import HomeProprietaire from "../pages/Dashboard/Proprietaire/HomeProprietaire";
 import HomeSecretaire from "../pages/Dashboard/Secretaire/HomeSecretaire";
+import ProfileProprietaire from "../pages/Dashboard/Proprietaire/ProfileProprietaire";
 
 const AppRoutes = () => {
   return (
@@ -20,10 +21,14 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route path="proprietaire" element={<HomeProprietaire />} />
+          <Route path="proprietaire">
+            <Route index element={<HomeProprietaire />} />
+            <Route path="profile" element={<ProfileProprietaire />} />
+          </Route>
           <Route path="moniteur" element={<HomeMoniteur />} />
           <Route path="secretaire" element={<HomeSecretaire />} />
         </Route>
+
         {/* 🔒 Routes protégéHomeProprietairees */}
       </Routes>
     </BrowserRouter>

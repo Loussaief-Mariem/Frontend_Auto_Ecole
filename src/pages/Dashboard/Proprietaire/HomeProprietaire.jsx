@@ -1,3 +1,4 @@
+import { Link as RouterLink } from "react-router-dom";
 import {
   Grid,
   Paper,
@@ -6,7 +7,9 @@ import {
   Box,
   LinearProgress,
   Chip,
+  Button,
 } from "@mui/material";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import PriceChangeOutlinedIcon from "@mui/icons-material/PriceChangeOutlined";
@@ -46,12 +49,17 @@ const StatCard = ({ title, value, icon, hint }) => (
         {icon}
       </Box>
     </Stack>
-    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      sx={{ mt: 1, display: "block" }}
+    >
       {hint}
     </Typography>
   </Paper>
 );
-
+console.log("Access Token:", localStorage.getItem("accessToken"));
+console.log("Refresh Token:", localStorage.getItem("refreshToken"));
 const HomeProprietaire = () => {
   return (
     <Grid container spacing={2.5}>
@@ -70,7 +78,27 @@ const HomeProprietaire = () => {
               Vue globale de votre auto-école AutoPilot.
             </Typography>
           </Box>
-          <Chip icon={<TrendingUpRoundedIcon />} color="primary" label="Performance +12%" />
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            flexWrap="wrap"
+          >
+            <Button
+              component={RouterLink}
+              to="/dashboard/proprietaire/profile"
+              variant="outlined"
+              color="primary"
+              startIcon={<PersonOutlineIcon />}
+            >
+              Mon profil
+            </Button>
+            <Chip
+              icon={<TrendingUpRoundedIcon />}
+              color="primary"
+              label="Performance +12%"
+            />
+          </Stack>
         </Stack>
       </Grid>
 
@@ -117,19 +145,31 @@ const HomeProprietaire = () => {
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Gestion des comptes
               </Typography>
-              <LinearProgress variant="determinate" value={76} sx={{ height: 8, borderRadius: 10 }} />
+              <LinearProgress
+                variant="determinate"
+                value={76}
+                sx={{ height: 8, borderRadius: 10 }}
+              />
             </Box>
             <Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Planification des séances
               </Typography>
-              <LinearProgress variant="determinate" value={88} sx={{ height: 8, borderRadius: 10 }} />
+              <LinearProgress
+                variant="determinate"
+                value={88}
+                sx={{ height: 8, borderRadius: 10 }}
+              />
             </Box>
             <Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Gestion des tarifs
               </Typography>
-              <LinearProgress variant="determinate" value={64} sx={{ height: 8, borderRadius: 10 }} />
+              <LinearProgress
+                variant="determinate"
+                value={64}
+                sx={{ height: 8, borderRadius: 10 }}
+              />
             </Box>
           </Stack>
         </Paper>

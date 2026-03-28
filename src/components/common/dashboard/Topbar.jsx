@@ -66,7 +66,12 @@ const Topbar = ({ onToggleSidebar }) => {
       }}
     >
       <Toolbar sx={{ minHeight: { xs: 68, md: 72 } }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1 }}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          alignItems="center"
+          sx={{ flex: 1 }}
+        >
           <IconButton
             onClick={onToggleSidebar}
             sx={{ display: { xs: "inline-flex", lg: "none" } }}
@@ -113,7 +118,10 @@ const Topbar = ({ onToggleSidebar }) => {
           </Tooltip>
 
           <Tooltip title="Profil">
-            <IconButton color="primary">
+            <IconButton
+              color="primary"
+              onClick={() => navigate("/dashboard/proprietaire/profile")}
+            >
               <PersonRoundedIcon />
             </IconButton>
           </Tooltip>
@@ -124,13 +132,29 @@ const Topbar = ({ onToggleSidebar }) => {
             </IconButton>
           </Tooltip>
 
-          <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: 13 }}>
+          <Avatar
+            sx={{
+              width: 34,
+              height: 34,
+              bgcolor: "primary.main",
+              fontSize: 13,
+            }}
+          >
             {user?.login?.[0]?.toUpperCase() || "A"}
           </Avatar>
         </Stack>
 
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleCloseMenu}>
-          <MenuItem onClick={handleCloseMenu}>
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleCloseMenu}
+        >
+          <MenuItem
+            onClick={() => {
+              handleCloseMenu();
+              navigate("/dashboard/proprietaire/profile");
+            }}
+          >
             <PersonRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
             Mon profil
           </MenuItem>
