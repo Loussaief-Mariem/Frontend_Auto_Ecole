@@ -1,3 +1,4 @@
+// fichier : src/pages/ProfileProprietaire.jsx (ou votre composant)
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -7,42 +8,57 @@ import {
   TextField,
   Typography,
   CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CloseIcon from "@mui/icons-material/Close";
 
-import { getProfile } from "../../../api/propretaireService";
+import { getProfile, updateProfile } from "../../../api/propretaireService";
 
 const ProfileProprietaire = () => {
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [backup, setBackup] = useState(null);
   const [loading, setLoading] = useState(true);
-  //  Charger les données depuis API
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  // Charger les données depuis API
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getProfile();
 
+        console.log("Données reçues du backend:", data);
+
         setProfile({
-          nom: data.nomProp,
-          prenom: data.prenomProp,
-          email: data.email,
-          telephone: data.telephone,
-          codeEtablissement: data.codeEtablissement,
-          nomAutoEcole: data.nomAutoEcole,
-          identifiantFiscal: data.identifiantFiscal,
+          nom: data.nomProp || "",
+          prenom: data.prenomProp || "",
+          email: data.email || "",
+          telephone: data.telephone || "",
+          codeEtablissement: data.codeEtablissement || "",
+          nomAutoEcole: data.nomAutoEcole || "",
+          identifiantFiscal: data.identifiantFiscal || "",
           adresse: {
-            rue: data.adresse.rue,
-            ville: data.adresse.ville,
-            gouvernorat: data.adresse.gouvernorat,
-            pays: data.adresse.pays,
+            rue: data.adresse?.rue || "",
+            ville: data.adresse?.ville || "",
+            gouvernorat: data.adresse?.gouvernorat || "",
+            pays: data.adresse?.pays || "",
           },
         });
-        console.log("Fetching profile data...", data);
       } catch (error) {
         console.error("Erreur chargement profile", error);
+        setSnackbar({
+          open: true,
+          message: "Erreur lors du chargement du profil",
+          severity: "error",
+        });
       } finally {
         setLoading(false);
       }
@@ -51,7 +67,7 @@ const ProfileProprietaire = () => {
     fetchProfile();
   }, []);
 
-  // 🔥 Gestion des champs
+  // Gestion des champs
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -79,16 +95,82 @@ const ProfileProprietaire = () => {
 
   const handleSave = async () => {
     try {
-      console.log("Data à envoyer :", profile);
+      setSaving(true);
 
-      // 🔥 ici tu vas appeler PUT API plus tard
-      // await updateProfile(profile)
+      // Préparer les données pour l'API
+      const dataToSend = {
+        nomProp: profile.nom,
+        prenomProp: profile.prenom,
+        telephone: profile.telephone,
+        nomAutoEcole: profile.nomAutoEcole,
+        codeEtablissement: profile.codeEtablissement,
+        identifiantFiscal: profile.identifiantFiscal,
+        adresse: {
+          rue: profile.adresse.rue,
+          ville: profile.adresse.ville,
+          gouvernorat: profile.adresse.gouvernorat,
+          pays: profile.adresse.pays,
+        },
+      };
+
+      console.log("Données à envoyer :", dataToSend);
+
+      // Appel API pour mettre à jour le profil
+      await updateProfile(dataToSend);
+
+      // Recharger le profil après la mise à jour
+      const updatedProfile = await getProfile();
+
+      console.log("Profil mis à jour reçu:", updatedProfile);
+
+      // Mettre à jour le state avec les nouvelles données
+      setProfile({
+        nom: updatedProfile.nomProp || profile.nom,
+        prenom: updatedProfile.prenomProp || profile.prenom,
+        email: updatedProfile.email || profile.email,
+        telephone: updatedProfile.telephone || profile.telephone,
+        codeEtablissement:
+          updatedProfile.codeEtablissement || profile.codeEtablissement,
+        nomAutoEcole: updatedProfile.nomAutoEcole || profile.nomAutoEcole,
+        identifiantFiscal:
+          updatedProfile.identifiantFiscal || profile.identifiantFiscal,
+        adresse: {
+          rue: updatedProfile.adresse?.rue || profile.adresse.rue,
+          ville: updatedProfile.adresse?.ville || profile.adresse.ville,
+          gouvernorat:
+            updatedProfile.adresse?.gouvernorat || profile.adresse.gouvernorat,
+          pays: updatedProfile.adresse?.pays || profile.adresse.pays,
+        },
+      });
 
       setBackup(null);
       setEditMode(false);
+
+      // Afficher un message de succès
+      setSnackbar({
+        open: true,
+        message: "Profil mis à jour avec succès !",
+        severity: "success",
+      });
     } catch (error) {
-      console.error("Erreur update", error);
+      console.error("Erreur détaillée:", error);
+      console.error("Réponse erreur:", error.response?.data);
+
+      setSnackbar({
+        open: true,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Erreur lors de la mise à jour du profil",
+        severity: "error",
+      });
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const fieldProps = {
@@ -97,8 +179,8 @@ const ProfileProprietaire = () => {
     size: "medium",
     disabled: !editMode,
   };
-  console.log("Profile data:", profile);
-  // 🔥 Loading UI
+
+  // Loading UI
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" mt={10}>
@@ -107,9 +189,13 @@ const ProfileProprietaire = () => {
     );
   }
 
-  // 🔥 sécurité (si null)
+  // sécurité (si null)
   if (!profile) {
-    return <Typography>Erreur chargement profil</Typography>;
+    return (
+      <Box display="flex" justifyContent="center" mt={10}>
+        <Alert severity="error">Erreur lors du chargement du profil</Alert>
+      </Box>
+    );
   }
 
   return (
@@ -145,6 +231,7 @@ const ProfileProprietaire = () => {
                 variant="outlined"
                 startIcon={<CloseIcon />}
                 onClick={cancelEdit}
+                disabled={saving}
               >
                 Annuler
               </Button>
@@ -152,8 +239,9 @@ const ProfileProprietaire = () => {
                 variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleSave}
+                disabled={saving}
               >
-                Enregistrer
+                {saving ? <CircularProgress size={24} /> : "Enregistrer"}
               </Button>
             </>
           )}
@@ -162,7 +250,7 @@ const ProfileProprietaire = () => {
 
       {/* CONTENU */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
-        {/* 🔹 INFO PERSO */}
+        {/* INFO PERSO */}
         <Paper sx={{ flex: 1, p: 3, borderRadius: 3 }}>
           <Typography variant="h6" fontWeight={700}>
             Informations personnelles
@@ -187,8 +275,10 @@ const ProfileProprietaire = () => {
               {...fieldProps}
               label="Email"
               name="email"
+              type="email"
               value={profile.email}
               onChange={handleChange}
+              disabled={true} // Email ne devrait pas être modifiable
             />
             <TextField
               {...fieldProps}
@@ -200,7 +290,7 @@ const ProfileProprietaire = () => {
           </Stack>
         </Paper>
 
-        {/* 🔹 AUTO ECOLE */}
+        {/* AUTO ECOLE */}
         <Paper sx={{ flex: 1, p: 3, borderRadius: 3 }}>
           <Typography variant="h6" fontWeight={700}>
             Auto-école
@@ -229,7 +319,9 @@ const ProfileProprietaire = () => {
               onChange={handleChange}
             />
 
-            <Typography fontWeight={600}>Adresse</Typography>
+            <Typography fontWeight={600} mt={1}>
+              Adresse
+            </Typography>
 
             <TextField
               {...fieldProps}
@@ -262,6 +354,23 @@ const ProfileProprietaire = () => {
           </Stack>
         </Paper>
       </Stack>
+
+      {/* Snackbar pour les notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

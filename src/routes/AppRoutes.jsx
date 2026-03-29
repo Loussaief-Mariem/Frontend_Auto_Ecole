@@ -10,6 +10,8 @@ import HomeMoniteur from "../pages/Dashboard/Moniteur/HomeMoniteur";
 import HomeProprietaire from "../pages/Dashboard/Proprietaire/HomeProprietaire";
 import HomeSecretaire from "../pages/Dashboard/Secretaire/HomeSecretaire";
 import ProfileProprietaire from "../pages/Dashboard/Proprietaire/ProfileProprietaire";
+import AddSecretaire from "../pages/Dashboard/Proprietaire/secretaires/AddSecretaire";
+import AddMoniteur from "../pages/Dashboard/Proprietaire/moniteurs/AddMoniteur";
 
 const AppRoutes = () => {
   return (
@@ -24,6 +26,8 @@ const AppRoutes = () => {
           <Route path="proprietaire">
             <Route index element={<HomeProprietaire />} />
             <Route path="profile" element={<ProfileProprietaire />} />
+            <Route path="addmoniteur" element={<AddMoniteur />} />
+            <Route path="addsecretaire" element={<AddSecretaire />} />
           </Route>
           <Route path="moniteur" element={<HomeMoniteur />} />
           <Route path="secretaire" element={<HomeSecretaire />} />

@@ -1,39 +1,68 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import * as authService from "../api/authService";
-import { setTokens, clearTokens } from "../utils/tokenHelper";
+import { setTokens, clearTokens, getStoredUser } from "../utils/tokenHelper";
 
 const AuthContext = createContext();
-console.log("Access Token:", localStorage.getItem("accessToken"));
-console.log("Refresh Token:", localStorage.getItem("refreshToken"));
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
 
+export const AuthProvider = ({ children }) => {
+  // Initialiser l'utilisateur depuis localStorage si déjà connecté
+  const [user, setUser] = useState(getStoredUser());
+
+  // 🔹 Login
   const login = async (data) => {
     const res = await authService.login(data);
-    console.log("Login response:  Auth hhh", res);
 
-    // Stocke les tokens
+    // Stocker les tokens
     setTokens(res);
 
-    // Stocke les infos utilisateur correctement
-    setUser({ login: res.login, role: res.role });
+    // Stocker infos utilisateur (login, role, autoEcoleId, proprietaireId)
+    const userInfo = {
+      login: res.login,
+      role: res.role,
+      proprietaireId: res.proprietaireId,
+      autoEcoleId: res.autoEcoleId,
+      nomAutoEcole: res.nomAutoEcole,
+    };
+    localStorage.setItem("user", JSON.stringify(userInfo));
+    setUser(userInfo);
 
     return res;
   };
 
+  // 🔹 Register
   const register = async (data) => {
-    return await authService.register(data);
+    const res = await authService.register(data);
+
+    // Stocker tokens si renvoyés
+    if (res.token && res.refreshToken) {
+      setTokens(res);
+    }
+
+    // Stocker infos utilisateur
+    const userInfo = {
+      login: res.login,
+      role: res.role || "Proprietaire",
+      proprietaireId: res.idProprietaire,
+      autoEcoleId: res.autoEcoleId,
+      nomAutoEcole: res.nomAutoEcole,
+    };
+    localStorage.setItem("user", JSON.stringify(userInfo));
+    setUser(userInfo);
+
+    return res;
   };
 
+  // 🔹 Logout
   const logout = async () => {
     const refreshToken = localStorage.getItem("refreshToken");
-    await authService.logout(refreshToken);
+    if (refreshToken) {
+      await authService.logout(refreshToken);
+    }
 
     clearTokens();
+    localStorage.removeItem("user");
     setUser(null);
   };
-  console.log("Access Token:", localStorage.getItem("accessToken"));
-  console.log("Refresh Token:", localStorage.getItem("refreshToken"));
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>
@@ -42,4 +71,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Hook pour utiliser le contexte
 export const useAuth = () => useContext(AuthContext);

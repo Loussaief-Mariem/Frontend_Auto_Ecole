@@ -15,11 +15,13 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { authPageSx, authPaperSx, authSubmitSx } from "./authStyles";
 
 const LoginPage = () => {
   const [form, setForm] = useState({ Login: "", MotDePasse: "" });
-  console.log("Login form state:", form); // Debug : vérifier les valeurs du formulaire
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -27,7 +29,6 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       const res = await login(form);
-      console.log("Login response:", res); // Debug : vérifier la réponse du login
       const role = res.role; // <-- ici, pas res.user.role
 
       if (role === "Proprietaire") {
@@ -42,6 +43,10 @@ const LoginPage = () => {
     } catch {
       alert("Erreur de connexion : identifiant ou mot de passe incorrect");
     }
+  };
+
+  const handleTogglePassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -86,7 +91,7 @@ const LoginPage = () => {
 
             <TextField
               label="Mot de passe"
-              type="password"
+              type={showPassword ? "text" : "password"}
               fullWidth
               autoComplete="current-password"
               value={form.MotDePasse}
@@ -95,6 +100,26 @@ const LoginPage = () => {
                 startAdornment: (
                   <InputAdornment position="start">
                     <LockOutlinedIcon color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={
+                        showPassword
+                          ? "Masquer le mot de passe"
+                          : "Afficher le mot de passe"
+                      }
+                      onClick={handleTogglePassword}
+                      edge="end"
+                      size="small"
+                    >
+                      {showPassword ? (
+                        <VisibilityOffOutlinedIcon color="primary" />
+                      ) : (
+                        <VisibilityOutlinedIcon color="primary" />
+                      )}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}

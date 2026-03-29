@@ -21,6 +21,8 @@ import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
 
 const Topbar = ({ onToggleSidebar }) => {
   const { logout, user } = useAuth();
@@ -158,6 +160,31 @@ const Topbar = ({ onToggleSidebar }) => {
             <PersonRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
             Mon profil
           </MenuItem>
+
+          {user?.role === "Proprietaire" && (
+            <>
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  navigate("/dashboard/proprietaire/addmoniteur");
+                }}
+              >
+                <PersonAddAlt1Icon fontSize="small" sx={{ mr: 1 }} />
+                Ajouter Moniteur
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  navigate("/dashboard/proprietaire/addsecretaire");
+                }}
+              >
+                <BadgeRoundedIcon fontSize="small" sx={{ mr: 1 }} />
+                Ajouter Secrétaire
+              </MenuItem>
+            </>
+          )}
+
           <MenuItem onClick={handleLogout}>
             <LogoutRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
             Déconnexion
