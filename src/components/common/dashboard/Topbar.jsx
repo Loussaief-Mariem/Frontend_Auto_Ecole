@@ -161,29 +161,18 @@ const Topbar = ({ onToggleSidebar }) => {
             Mon profil
           </MenuItem>
 
-          {user?.role === "Proprietaire" && (
-            <>
-              <MenuItem
-                onClick={() => {
-                  handleCloseMenu();
-                  navigate("/dashboard/proprietaire/addmoniteur");
-                }}
-              >
-                <PersonAddAlt1Icon fontSize="small" sx={{ mr: 1 }} />
-                Ajouter Moniteur
-              </MenuItem>
-
-              <MenuItem
-                onClick={() => {
-                  handleCloseMenu();
-                  navigate("/dashboard/proprietaire/addsecretaire");
-                }}
-              >
-                <BadgeRoundedIcon fontSize="small" sx={{ mr: 1 }} />
-                Ajouter Secrétaire
-              </MenuItem>
-            </>
-          )}
+          {user?.role === "Proprietaire" && [
+            <MenuItem
+              key="add-secretaire"
+              onClick={() => {
+                handleCloseMenu();
+                navigate("/dashboard/proprietaire/adduser");
+              }}
+            >
+              <PersonAddAlt1Icon fontSize="small" sx={{ mr: 1 }} />
+              Ajouter Utilisateur
+            </MenuItem>,
+          ]}
 
           <MenuItem onClick={handleLogout}>
             <LogoutRoundedIcon fontSize="small" style={{ marginRight: 8 }} />

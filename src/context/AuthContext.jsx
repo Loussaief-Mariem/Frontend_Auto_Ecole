@@ -7,22 +7,27 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   // Initialiser l'utilisateur depuis localStorage si déjà connecté
   const [user, setUser] = useState(getStoredUser());
-
+  console.log("AuthProvider initialized with user:", user);
   // 🔹 Login
   const login = async (data) => {
     const res = await authService.login(data);
 
-    // Stocker les tokens
-    setTokens(res);
+    console.log("Login response:", res);
 
-    // Stocker infos utilisateur (login, role, autoEcoleId, proprietaireId)
+    // 🔐 tokens
+    setTokens(res);
+    console.log("Tokens stored:", {
+      token: res.token,
+      refreshToken: res.refreshToken,
+    });
+
+    // 🎯 user
     const userInfo = {
       login: res.login,
       role: res.role,
-      proprietaireId: res.proprietaireId,
-      autoEcoleId: res.autoEcoleId,
-      nomAutoEcole: res.nomAutoEcole,
+      user: res.user, //
     };
+    console.log("User info to store:", userInfo);
     localStorage.setItem("user", JSON.stringify(userInfo));
     setUser(userInfo);
 

@@ -1,4 +1,3 @@
-// fichier : src/pages/ProfileProprietaire.jsx (ou votre composant)
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -9,7 +8,7 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Snackbar,
+  Collapse,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -17,25 +16,26 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import { getProfile, updateProfile } from "../../../api/propretaireService";
 
+// ✅ liste des permis
+const PERMIS_OPTIONS = ["A", "AA", "B", "BE", "C", "CE", "D", "DE", "G", "H"];
+
 const ProfileProprietaire = () => {
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [backup, setBackup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
+  const [message, setMessage] = useState({
+    show: false,
+    text: "",
     severity: "success",
   });
 
-  // Charger les données depuis API
+  // ✅ FETCH PROFILE
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getProfile();
-
-        console.log("Données reçues du backend:", data);
 
         setProfile({
           nom: data.nomProp || "",
@@ -45,6 +45,7 @@ const ProfileProprietaire = () => {
           codeEtablissement: data.codeEtablissement || "",
           nomAutoEcole: data.nomAutoEcole || "",
           identifiantFiscal: data.identifiantFiscal || "",
+          typePermisCodes: data.typePermisCodes || [],
           adresse: {
             rue: data.adresse?.rue || "",
             ville: data.adresse?.ville || "",
@@ -53,12 +54,7 @@ const ProfileProprietaire = () => {
           },
         });
       } catch (error) {
-        console.error("Erreur chargement profile", error);
-        setSnackbar({
-          open: true,
-          message: "Erreur lors du chargement du profil",
-          severity: "error",
-        });
+        showMessage("Erreur lors du chargement du profil", "error");
       } finally {
         setLoading(false);
       }
@@ -67,7 +63,21 @@ const ProfileProprietaire = () => {
     fetchProfile();
   }, []);
 
-  // Gestion des champs
+  // ✅ Afficher un message temporaire au-dessus du formulaire
+  const showMessage = (text, severity = "success") => {
+    setMessage({
+      show: true,
+      text,
+      severity,
+    });
+
+    // Masquer automatiquement après 5 secondes
+    setTimeout(() => {
+      setMessage((prev) => ({ ...prev, show: false }));
+    }, 5000);
+  };
+
+  // ✅ HANDLE INPUT
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -82,22 +92,93 @@ const ProfileProprietaire = () => {
     }
   };
 
+  // ✅ HANDLE PERMIS
+  const handlePermisChange = (code) => {
+    setProfile((prev) => {
+      const exists = prev.typePermisCodes.includes(code);
+      return {
+        ...prev,
+        typePermisCodes: exists
+          ? prev.typePermisCodes.filter((c) => c !== code)
+          : [...prev.typePermisCodes, code],
+      };
+    });
+  };
+
   const startEdit = () => {
     setBackup(JSON.parse(JSON.stringify(profile)));
     setEditMode(true);
+    // Masquer tout message existant
+    setMessage({ show: false, text: "", severity: "success" });
   };
 
   const cancelEdit = () => {
     if (backup) setProfile(backup);
-    setBackup(null);
     setEditMode(false);
+    setMessage({ show: false, text: "", severity: "success" });
   };
 
+  // ✅ SAVE
   const handleSave = async () => {
     try {
       setSaving(true);
+      setMessage({ show: false, text: "", severity: "success" });
 
-      // Préparer les données pour l'API
+      // Validation des champs requis
+      if (!profile.nom?.trim()) {
+        showMessage("Le nom est requis", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.prenom?.trim()) {
+        showMessage("Le prénom est requis", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.telephone?.trim()) {
+        showMessage("Le téléphone est requis", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.nomAutoEcole?.trim()) {
+        showMessage("Le nom de l'auto-école est requis", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.codeEtablissement?.trim()) {
+        showMessage("Le code établissement est requis", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.identifiantFiscal?.trim()) {
+        showMessage("L'identifiant fiscal est requis", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.adresse.rue?.trim()) {
+        showMessage("La rue est requise", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.adresse.ville?.trim()) {
+        showMessage("La ville est requise", "error");
+        setSaving(false);
+        return;
+      }
+
+      if (!profile.adresse.gouvernorat?.trim()) {
+        showMessage("Le gouvernorat est requis", "error");
+        setSaving(false);
+        return;
+      }
+
       const dataToSend = {
         nomProp: profile.nom,
         prenomProp: profile.prenom,
@@ -105,6 +186,7 @@ const ProfileProprietaire = () => {
         nomAutoEcole: profile.nomAutoEcole,
         codeEtablissement: profile.codeEtablissement,
         identifiantFiscal: profile.identifiantFiscal,
+        typePermisCodes: profile.typePermisCodes,
         adresse: {
           rue: profile.adresse.rue,
           ville: profile.adresse.ville,
@@ -113,64 +195,39 @@ const ProfileProprietaire = () => {
         },
       };
 
-      console.log("Données à envoyer :", dataToSend);
-
-      // Appel API pour mettre à jour le profil
       await updateProfile(dataToSend);
 
-      // Recharger le profil après la mise à jour
       const updatedProfile = await getProfile();
 
-      console.log("Profil mis à jour reçu:", updatedProfile);
-
-      // Mettre à jour le state avec les nouvelles données
       setProfile({
-        nom: updatedProfile.nomProp || profile.nom,
-        prenom: updatedProfile.prenomProp || profile.prenom,
-        email: updatedProfile.email || profile.email,
-        telephone: updatedProfile.telephone || profile.telephone,
-        codeEtablissement:
-          updatedProfile.codeEtablissement || profile.codeEtablissement,
-        nomAutoEcole: updatedProfile.nomAutoEcole || profile.nomAutoEcole,
-        identifiantFiscal:
-          updatedProfile.identifiantFiscal || profile.identifiantFiscal,
+        nom: updatedProfile.nomProp || "",
+        prenom: updatedProfile.prenomProp || "",
+        email: updatedProfile.email || "",
+        telephone: updatedProfile.telephone || "",
+        codeEtablissement: updatedProfile.codeEtablissement || "",
+        nomAutoEcole: updatedProfile.nomAutoEcole || "",
+        identifiantFiscal: updatedProfile.identifiantFiscal || "",
+        typePermisCodes: updatedProfile.typePermisCodes || [],
         adresse: {
-          rue: updatedProfile.adresse?.rue || profile.adresse.rue,
-          ville: updatedProfile.adresse?.ville || profile.adresse.ville,
-          gouvernorat:
-            updatedProfile.adresse?.gouvernorat || profile.adresse.gouvernorat,
-          pays: updatedProfile.adresse?.pays || profile.adresse.pays,
+          rue: updatedProfile.adresse?.rue || "",
+          ville: updatedProfile.adresse?.ville || "",
+          gouvernorat: updatedProfile.adresse?.gouvernorat || "",
+          pays: updatedProfile.adresse?.pays || "",
         },
       });
 
-      setBackup(null);
       setEditMode(false);
-
-      // Afficher un message de succès
-      setSnackbar({
-        open: true,
-        message: "Profil mis à jour avec succès !",
-        severity: "success",
-      });
+      showMessage("Profil mis à jour avec succès !", "success");
     } catch (error) {
       console.error("Erreur détaillée:", error);
-      console.error("Réponse erreur:", error.response?.data);
-
-      setSnackbar({
-        open: true,
-        message:
-          error.response?.data?.message ||
-          error.message ||
-          "Erreur lors de la mise à jour du profil",
-        severity: "error",
-      });
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Erreur lors de la mise à jour du profil";
+      showMessage(errorMessage, "error");
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
   };
 
   const fieldProps = {
@@ -180,7 +237,6 @@ const ProfileProprietaire = () => {
     disabled: !editMode,
   };
 
-  // Loading UI
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" mt={10}>
@@ -189,11 +245,10 @@ const ProfileProprietaire = () => {
     );
   }
 
-  // sécurité (si null)
   if (!profile) {
     return (
       <Box display="flex" justifyContent="center" mt={10}>
-        <Alert severity="error">Erreur lors du chargement du profil</Alert>
+        <Alert severity="error">Erreur chargement profil</Alert>
       </Box>
     );
   }
@@ -211,11 +266,10 @@ const ProfileProprietaire = () => {
           <Typography variant="h4" fontWeight={800}>
             Mon Profil
           </Typography>
-          <Typography color="text.secondary">
-            Gérez vos informations personnelles et votre auto-école
-          </Typography>
+          <Typography color="text.secondary">Gérez vos informations</Typography>
         </Box>
 
+        {/* BOUTONS */}
         <Stack direction="row" spacing={1}>
           {!editMode ? (
             <Button
@@ -248,9 +302,33 @@ const ProfileProprietaire = () => {
         </Stack>
       </Stack>
 
+      {/* ✅ MESSAGE TEMPORAIRE AU-DESSUS DU FORMULAIRE AVEC COULEURS PERSONNALISÉES */}
+      <Collapse in={message.show}>
+        <Alert
+          severity={message.severity}
+          sx={{
+            mb: 3,
+            backgroundColor:
+              message.severity === "success" ? "#d4edda" : "#f8d7da",
+            color: message.severity === "success" ? "#155724" : "#721c24",
+            border:
+              message.severity === "success"
+                ? "1px solid #c3e6cb"
+                : "1px solid #f5c6cb",
+            "& .MuiAlert-icon": {
+              color: message.severity === "success" ? "#155724" : "#721c24",
+            },
+          }}
+          onClose={() => setMessage({ ...message, show: false })}
+          icon={false}
+        >
+          {message.text}
+        </Alert>
+      </Collapse>
+
       {/* CONTENU */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
-        {/* INFO PERSO */}
+        {/* INFORMATIONS PERSONNELLES + TYPES DE PERMIS */}
         <Paper sx={{ flex: 1, p: 3, borderRadius: 3 }}>
           <Typography variant="h6" fontWeight={700}>
             Informations personnelles
@@ -263,6 +341,7 @@ const ProfileProprietaire = () => {
               name="nom"
               value={profile.nom}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
@@ -270,15 +349,13 @@ const ProfileProprietaire = () => {
               name="prenom"
               value={profile.prenom}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
               label="Email"
-              name="email"
-              type="email"
               value={profile.email}
-              onChange={handleChange}
-              disabled={true} // Email ne devrait pas être modifiable
+              disabled
             />
             <TextField
               {...fieldProps}
@@ -286,11 +363,43 @@ const ProfileProprietaire = () => {
               name="telephone"
               value={profile.telephone}
               onChange={handleChange}
+              required
             />
+
+            {/* ✅ TYPES DE PERMIS BLEU CLAIR */}
+            <Typography fontWeight={600} mt={2}>
+              Types de permis
+            </Typography>
+            <Stack direction="row" flexWrap="wrap" gap={1}>
+              {PERMIS_OPTIONS.map((code) => {
+                const selected = profile.typePermisCodes.includes(code);
+
+                return (
+                  <Button
+                    key={code}
+                    onClick={() => handlePermisChange(code)}
+                    disabled={!editMode}
+                    sx={{
+                      borderRadius: "20px",
+                      px: 2,
+                      fontWeight: 600,
+                      backgroundColor: selected ? "#bbdefb" : "transparent",
+                      color: "#0d47a1",
+                      border: "1px solid #90caf9",
+                      "&:hover": {
+                        backgroundColor: selected ? "#90caf9" : "#e3f2fd",
+                      },
+                    }}
+                  >
+                    {code}
+                  </Button>
+                );
+              })}
+            </Stack>
           </Stack>
         </Paper>
 
-        {/* AUTO ECOLE */}
+        {/* AUTO-ECOLE */}
         <Paper sx={{ flex: 1, p: 3, borderRadius: 3 }}>
           <Typography variant="h6" fontWeight={700}>
             Auto-école
@@ -303,6 +412,7 @@ const ProfileProprietaire = () => {
               name="nomAutoEcole"
               value={profile.nomAutoEcole}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
@@ -310,6 +420,7 @@ const ProfileProprietaire = () => {
               name="codeEtablissement"
               value={profile.codeEtablissement}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
@@ -317,18 +428,18 @@ const ProfileProprietaire = () => {
               name="identifiantFiscal"
               value={profile.identifiantFiscal}
               onChange={handleChange}
+              required
             />
 
-            <Typography fontWeight={600} mt={1}>
-              Adresse
-            </Typography>
-
+            {/* ✅ ADRESSE */}
+            <Typography fontWeight={600}>Adresse</Typography>
             <TextField
               {...fieldProps}
               label="Rue"
               name="adresse.rue"
               value={profile.adresse.rue}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
@@ -336,6 +447,7 @@ const ProfileProprietaire = () => {
               name="adresse.ville"
               value={profile.adresse.ville}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
@@ -343,6 +455,7 @@ const ProfileProprietaire = () => {
               name="adresse.gouvernorat"
               value={profile.adresse.gouvernorat}
               onChange={handleChange}
+              required
             />
             <TextField
               {...fieldProps}
@@ -354,23 +467,6 @@ const ProfileProprietaire = () => {
           </Stack>
         </Paper>
       </Stack>
-
-      {/* Snackbar pour les notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

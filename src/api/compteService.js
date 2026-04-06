@@ -1,3 +1,4 @@
+// src/api/compteService.js
 import api from "./axios";
 
 const CompteService = {
@@ -41,20 +42,18 @@ const CompteService = {
 
   //  Activer un compte
   activerCompte: async (id) => {
-    const response = await api.patch(`/Compte/activer/${id}`);
-    return response.data;
+    const res = await api.patch(`/Compte/activer/${id}`);
+    return res.data;
   },
 
-  //  Désactiver (si tu ajoutes backend)
-  desactiverCompte: async (id) => {
-    const response = await api.patch(`/Compte/desactiver/${id}`);
-    return response.data;
-  },
-
-  //  Bloquer (si tu ajoutes backend)
   bloquerCompte: async (id) => {
-    const response = await api.patch(`/Compte/bloquer/${id}`);
-    return response.data;
+    const res = await api.patch(`/Compte/compte/${id}/bloquer`);
+    return res.data;
+  },
+
+  debloquerCompte: async (id) => {
+    const res = await api.patch(`/Compte/compte/${id}/debloquer`);
+    return res.data;
   },
 };
 

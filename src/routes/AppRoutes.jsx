@@ -10,8 +10,9 @@ import HomeMoniteur from "../pages/Dashboard/Moniteur/HomeMoniteur";
 import HomeProprietaire from "../pages/Dashboard/Proprietaire/HomeProprietaire";
 import HomeSecretaire from "../pages/Dashboard/Secretaire/HomeSecretaire";
 import ProfileProprietaire from "../pages/Dashboard/Proprietaire/ProfileProprietaire";
-import AddSecretaire from "../pages/Dashboard/Proprietaire/secretaires/AddSecretaire";
-import AddMoniteur from "../pages/Dashboard/Proprietaire/moniteurs/AddMoniteur";
+import AddUser from "../pages/Dashboard/Proprietaire/AddUser";
+import GestionUtilisateurs from "../pages/Dashboard/Proprietaire/GestionUtilisateurs";
+import AddCandidatPage from "../pages/Dashboard/Secretaire/AddCandidatPage";
 
 const AppRoutes = () => {
   return (
@@ -26,14 +27,18 @@ const AppRoutes = () => {
           <Route path="proprietaire">
             <Route index element={<HomeProprietaire />} />
             <Route path="profile" element={<ProfileProprietaire />} />
-            <Route path="addmoniteur" element={<AddMoniteur />} />
-            <Route path="addsecretaire" element={<AddSecretaire />} />
+            <Route path="adduser" element={<AddUser />} />
+            <Route
+              path="gestion-utilisateurs"
+              element={<GestionUtilisateurs />}
+            />
           </Route>
           <Route path="moniteur" element={<HomeMoniteur />} />
-          <Route path="secretaire" element={<HomeSecretaire />} />
+          <Route path="secretaire">
+            <Route index element={<HomeSecretaire />} />
+            <Route path="add-candidat" element={<AddCandidatPage />} />
+          </Route>
         </Route>
-
-        {/* 🔒 Routes protégéHomeProprietairees */}
       </Routes>
     </BrowserRouter>
   );

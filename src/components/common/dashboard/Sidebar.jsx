@@ -1,4 +1,3 @@
-// Sidebar.js
 import {
   Box,
   Divider,
@@ -18,6 +17,8 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import PriceChangeOutlinedIcon from "@mui/icons-material/PriceChangeOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { blueGradients } from "../../../theme/muiTheme";
@@ -32,6 +33,16 @@ const menusByRole = {
       path: "/dashboard/proprietaire",
     },
     {
+      text: "Gestion des utilisateurs",
+      icon: <PeopleAltOutlinedIcon />,
+      path: "/dashboard/proprietaire/gestion-utilisateurs",
+    },
+    {
+      text: "Ajouter un utilisateur",
+      icon: <PersonAddOutlinedIcon />,
+      path: "/dashboard/proprietaire/adduser",
+    },
+    {
       text: "Gestion des comptes",
       icon: <GroupOutlinedIcon />,
       path: "/dashboard/proprietaire/comptes",
@@ -41,7 +52,6 @@ const menusByRole = {
       icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/proprietaire/seances",
     },
- 
     {
       text: "Tarifs",
       icon: <PriceChangeOutlinedIcon />,
@@ -53,6 +63,11 @@ const menusByRole = {
       text: "Dashboard",
       icon: <DashboardRoundedIcon />,
       path: "/dashboard/secretaire",
+    },
+    {
+      text: "Ajouter un candidat", // ← Nouveau lien ajouté
+      icon: <PersonAddOutlinedIcon />,
+      path: "/dashboard/secretaire/add-candidat",
     },
     {
       text: "Gestion des paiements",
@@ -192,8 +207,7 @@ const SidebarContent = ({ role, onCloseMobile }) => {
             }}
           />
         </ListItemButton>
-      </List> 
-      
+      </List>
 
       <Box sx={{ px: 2.5, pb: 2.5 }}>
         <Box

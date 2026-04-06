@@ -7,9 +7,10 @@ export const initialRegisterForm = {
   PrenomProp: "",
   NomEcole: "",
   CodeEtablissement: "",
-  IdentifiantFiscal: "", //  IdentifiantFiscal
+  IdentifiantFiscal: "",
   Email: "",
   Telephone: "",
+  TypePermisCode: [],
   Adresse: {
     Rue: "",
     Ville: "",
@@ -24,6 +25,7 @@ export const REGISTER_STEPS = [
   "Établissement",
   "Contact",
   "Adresse",
+  "Permis",
 ];
 
 /** Nombre d’étapes (utile pour validations ou boucles). */
@@ -34,5 +36,6 @@ export const REGISTER_STEP_INDEX = {
   PROPRIETAIRE: 0,
   ETABLISSEMENT: 1,
   CONTACT: 2,
-  ADRESSE: 3,
+  PERMIS: 3, 
+  ADRESSE: 4,
 };

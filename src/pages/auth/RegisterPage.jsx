@@ -93,7 +93,7 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validationErrors = validateRegisterStep(3, form);
+    const validationErrors = validateRegisterStep(4, form);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -117,6 +117,9 @@ const RegisterPage = () => {
         Email: form.Email,
         Telephone: form.Telephone,
         Login: form.Email,
+
+        TypePermisCode: form.TypePermisCode,
+
         Adresse: {
           Rue: form.Adresse.Rue,
           Ville: form.Adresse.Ville,

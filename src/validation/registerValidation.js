@@ -2,12 +2,12 @@ export const validateRegisterStep = (step, form) => {
   const errors = {};
 
   // =========================
-  // HELPERS REGEX
+  // REGEX
   // =========================
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^\d{8}$/;
-  const codeEcoleRegex = /^\d{2}-\d{3}$/; // 01-300
-  const identifiantFiscalRegex = /^\d{7}[A-Z]$/; // 1234567A
+  const codeEcoleRegex = /^\d{2}-\d{3}$/;
+  const identifiantFiscalRegex = /^\d{7}[A-Z]$/;
 
   switch (step) {
     // =========================
@@ -63,19 +63,35 @@ export const validateRegisterStep = (step, form) => {
       break;
 
     // =========================
-    // ADRESSE
+    // ✅ PERMIS (NOUVEAU)
     // =========================
     case 3:
+      if (!form.TypePermisCode || form.TypePermisCode.length === 0) {
+        errors.TypePermisCode =
+          "Veuillez sélectionner au moins un type de permis";
+      }
+      break;
+
+    // =========================
+    // ✅ ADRESSE (décalé)
+    // =========================
+    case 4:
       if (!form.Adresse?.Rue?.trim()) {
-        errors.Rue = "Rue obligatoire";
+        errors.Adresse = { ...errors.Adresse, Rue: "Rue obligatoire" };
       }
 
       if (!form.Adresse?.Gouvernorat?.trim()) {
-        errors.Gouvernorat = "Gouvernorat obligatoire";
+        errors.Adresse = {
+          ...errors.Adresse,
+          Gouvernorat: "Gouvernorat obligatoire",
+        };
       }
 
       if (!form.Adresse?.Ville?.trim()) {
-        errors.Ville = "Ville obligatoire";
+        errors.Adresse = {
+          ...errors.Adresse,
+          Ville: "Ville obligatoire",
+        };
       }
       break;
   }

@@ -32,6 +32,7 @@ const AdresseService = {
   // ------------------------------
   // Pays / Villes / Gouvernorats
   // ------------------------------
+  // les api publique pour les listes déroulantes
 
   getPays: async () => {
     const response = await api.get("/adresse/pays");
