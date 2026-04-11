@@ -60,3 +60,33 @@ export const getPagedCandidatsByAutoEcole = async (
   );
   return response.data;
 };
+//  Récupérer le profil complet du candidat
+export const getCandidatProfile = async (id) => {
+  const response = await api.get(`/Candidats/${id}/profile`);
+  return response.data;
+};
+
+/**
+ * Mise à jour du profil candidat (corps attendu côté API).
+ * id, nom, prenom, nomEpoux, numeroCIN, dates ISO, sexe, adresse { rue, ville, gouvernorat, pays },
+ * compte { id, login, telephone }, idContrat, typePermisCode, typeFormation, centreExamen,
+ * dossier { id, etatDossier, candidatId, documents: [{ id, statutDocument }] }
+ */
+export const updateCandidatProfil = async (id, data) => {
+  const response = await api.put(`/Candidats/${id}`, data);
+  return response.data;
+};
+
+/** Met à jour PhotoPath côté serveur (multipart). */
+export const uploadCandidatPhoto = async (id, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await api.post(`/Candidats/upload-photo/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return response.data;
+};

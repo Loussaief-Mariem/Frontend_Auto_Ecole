@@ -1,10 +1,15 @@
 import { Navigate } from "react-router-dom";
-import { getAccessToken } from "../utils/tokenHelper";
+import { useAuth } from "../context/AuthContext"; // Utiliser ton AuthContext
 
 const PrivateRoute = ({ children }) => {
-  const token = getAccessToken();
+  const { user } = useAuth();
 
-  return token ? children : <Navigate to="/login" />;
+  // Si pas d'utilisateur connecté, redirige vers /login
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
 };
 
 export default PrivateRoute;

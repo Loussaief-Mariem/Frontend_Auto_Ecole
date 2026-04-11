@@ -16,6 +16,7 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
+  FormHelperText,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -23,10 +24,10 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import CompteForm from "./CompteForm";
 import AdresseForm from "./AdresseForm";
-import useCandidatForm from "../hooks/useCandidatForm";
-import AdresseService from "../api/adresseService";
+import useCandidatForm from "../../../hooks/useCandidatForm";
+import AdresseService from "../../../api/adresseService";
 
-const CandidatForm = () => {
+const CandidatForm = ({ errMessage, setErrMessage }) => {
   const {
     formData,
     handleChange,
@@ -36,13 +37,11 @@ const CandidatForm = () => {
     documentsState,
     setDocumentChecked,
     loading,
-    error,
-  } = useCandidatForm();
+    fieldErrors,
+    clearFieldError,
+  } = useCandidatForm({ setErrMessage });
   const [paysList, setPaysList] = useState([]);
   const typePermisList = ["A", "AA", "B", "BE", "C", "CE", "D", "DE", "G", "H"];
-  console.log("useCandidatForm:", useCandidatForm);
-  console.log("formData:", formData);
-  console.log("formData:", formData.dossier);
   useEffect(() => {
     const fetchPays = async () => {
       try {
@@ -76,13 +75,18 @@ const CandidatForm = () => {
         </Typography>
 
         <Divider sx={{ mb: 3 }} />
-        {error && (
+        {errMessage && (
           <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
+            {errMessage}
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            setErrMessage("");
+            handleSubmit(e);
+          }}
+        >
           <Stack spacing={3}>
             {/* Informations personnelles */}
             <Typography variant="h6" fontWeight="medium" color="text.secondary">
@@ -97,6 +101,8 @@ const CandidatForm = () => {
                   onChange={handleChange}
                   fullWidth
                   required
+                  error={!!fieldErrors.nom}
+                  helperText={fieldErrors.nom || ""}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -107,6 +113,8 @@ const CandidatForm = () => {
                   onChange={handleChange}
                   fullWidth
                   required
+                  error={!!fieldErrors.prenom}
+                  helperText={fieldErrors.prenom || ""}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -119,7 +127,12 @@ const CandidatForm = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required size="medium">
+                <FormControl
+                  fullWidth
+                  required
+                  size="medium"
+                  error={!!fieldErrors.sexe}
+                >
                   <InputLabel>Sexe</InputLabel>
                   <Select
                     name="sexe"
@@ -152,6 +165,9 @@ const CandidatForm = () => {
                     <MenuItem value={0}>Masculin</MenuItem>
                     <MenuItem value={1}>Féminin</MenuItem>
                   </Select>
+                  {fieldErrors.sexe ? (
+                    <FormHelperText>{fieldErrors.sexe}</FormHelperText>
+                  ) : null}
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -162,6 +178,8 @@ const CandidatForm = () => {
                   onChange={handleChange}
                   fullWidth
                   required
+                  error={!!fieldErrors.numeroCIN}
+                  helperText={fieldErrors.numeroCIN || ""}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -174,6 +192,13 @@ const CandidatForm = () => {
                     })
                   }
                   sx={{ width: "100%" }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !!fieldErrors.dateNaissance,
+                      helperText: fieldErrors.dateNaissance || "",
+                    },
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -184,6 +209,8 @@ const CandidatForm = () => {
                   onChange={handleChange}
                   fullWidth
                   required
+                  error={!!fieldErrors.lieuDeNaissance}
+                  helperText={fieldErrors.lieuDeNaissance || ""}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -196,6 +223,13 @@ const CandidatForm = () => {
                     })
                   }
                   sx={{ width: "100%" }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !!fieldErrors.dateDelivranceCIN,
+                      helperText: fieldErrors.dateDelivranceCIN || "",
+                    },
+                  }}
                 />
               </Grid>
             </Grid>
@@ -206,7 +240,15 @@ const CandidatForm = () => {
             <Typography variant="h6" fontWeight="medium" color="text.secondary">
               Informations de compte
             </Typography>
-            <CompteForm setCompte={setCompte} initialCompte={formData.compte} />
+            <CompteForm
+              setCompte={setCompte}
+              initialCompte={formData.compte}
+              fieldErrors={{
+                login: fieldErrors.login,
+                telephone: fieldErrors.telephone,
+              }}
+              clearFieldError={clearFieldError}
+            />
 
             <Divider />
 
@@ -218,6 +260,13 @@ const CandidatForm = () => {
               setAdresse={setAdresse}
               initialAdresse={formData.adresse}
               paysOptions={paysList}
+              fieldErrors={{
+                pays: fieldErrors.pays,
+                gouvernorat: fieldErrors.gouvernorat,
+                ville: fieldErrors.ville,
+                rue: fieldErrors.rue,
+              }}
+              clearFieldError={clearFieldError}
             />
 
             <Divider />
@@ -267,7 +316,11 @@ const CandidatForm = () => {
             {/* Formation & Permis */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth size="medium">
+                <FormControl
+                  fullWidth
+                  size="medium"
+                  error={!!fieldErrors.typePermisCode}
+                >
                   <InputLabel>Type de permis</InputLabel>
                   <Select
                     name="typePermisCode"
@@ -282,10 +335,20 @@ const CandidatForm = () => {
                       </MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors.typePermisCode ? (
+                    <FormHelperText>
+                      {fieldErrors.typePermisCode}
+                    </FormHelperText>
+                  ) : null}
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required size="medium">
+                <FormControl
+                  fullWidth
+                  required
+                  size="medium"
+                  error={!!fieldErrors.typeFormation}
+                >
                   <InputLabel>Type de formation</InputLabel>
                   <Select
                     name="typeFormation"
@@ -323,6 +386,9 @@ const CandidatForm = () => {
                     <MenuItem value={1}>Conduite seulement</MenuItem>
                     <MenuItem value={2}>Formation complète</MenuItem>
                   </Select>
+                  {fieldErrors.typeFormation ? (
+                    <FormHelperText>{fieldErrors.typeFormation}</FormHelperText>
+                  ) : null}
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>

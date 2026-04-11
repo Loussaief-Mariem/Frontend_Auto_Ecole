@@ -7,10 +7,17 @@ import {
   FormControl,
   InputLabel,
   Select,
+  FormHelperText,
 } from "@mui/material";
-import AdresseService from "../api/adresseService";
+import AdresseService from "../../../api/adresseService";
 
-const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
+const AdresseForm = ({
+  setAdresse,
+  initialAdresse,
+  paysOptions = [],
+  fieldErrors = {},
+  clearFieldError,
+}) => {
   const [adresse, setLocalAdresse] = useState(
     initialAdresse || { pays: "Tunisie", gouvernorat: "", ville: "", rue: "" },
   );
@@ -73,13 +80,29 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
 
     setLocalAdresse(newData);
     setAdresse(newData);
+    if (typeof clearFieldError === "function" && name) {
+      clearFieldError(name);
+      if (name === "pays") {
+        clearFieldError("gouvernorat");
+        clearFieldError("ville");
+      }
+      if (name === "gouvernorat") {
+        clearFieldError("ville");
+      }
+    }
   };
 
   return (
     <Box>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <FormControl fullWidth required variant="outlined" size="medium">
+          <FormControl
+            fullWidth
+            required
+            variant="outlined"
+            size="medium"
+            error={!!fieldErrors.pays}
+          >
             <InputLabel>Pays</InputLabel>
             <Select
               name="pays"
@@ -121,6 +144,9 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
                 </MenuItem>
               ))}
             </Select>
+            {fieldErrors.pays ? (
+              <FormHelperText>{fieldErrors.pays}</FormHelperText>
+            ) : null}
           </FormControl>
         </Grid>
 
@@ -131,6 +157,7 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
             variant="outlined"
             size="medium"
             disabled={!adresse.pays}
+            error={!!fieldErrors.gouvernorat}
           >
             <InputLabel>Gouvernorat</InputLabel>
             <Select
@@ -165,6 +192,9 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
                 </MenuItem>
               ))}
             </Select>
+            {fieldErrors.gouvernorat ? (
+              <FormHelperText>{fieldErrors.gouvernorat}</FormHelperText>
+            ) : null}
           </FormControl>
         </Grid>
 
@@ -175,6 +205,7 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
             variant="outlined"
             size="medium"
             disabled={!adresse.gouvernorat}
+            error={!!fieldErrors.ville}
           >
             <InputLabel>Ville</InputLabel>
             <Select
@@ -209,6 +240,9 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
                 </MenuItem>
               ))}
             </Select>
+            {fieldErrors.ville ? (
+              <FormHelperText>{fieldErrors.ville}</FormHelperText>
+            ) : null}
           </FormControl>
         </Grid>
 
@@ -221,6 +255,8 @@ const AdresseForm = ({ setAdresse, initialAdresse, paysOptions = [] }) => {
             fullWidth
             required
             variant="outlined"
+            error={!!fieldErrors.rue}
+            helperText={fieldErrors.rue || ""}
           />
         </Grid>
       </Grid>

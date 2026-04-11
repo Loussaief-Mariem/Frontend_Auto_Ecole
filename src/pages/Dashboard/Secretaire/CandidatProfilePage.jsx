@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
@@ -50,6 +50,7 @@ import {
   CreditCard as CreditCardIcon,
 } from "@mui/icons-material";
 import useCandidatProfile from "../../../hooks/useCandidatProfile";
+import EditCandidatDialog from "../../../components/common/Candidat/EditCandidatDialog";
 import api from "../../../api/axios";
 import candidatPlaceholder from "../../../assets/candidat.jpg";
 import {
@@ -57,7 +58,7 @@ import {
   StatutDocument,
   EtatDossier,
   TypeFormation,
-  EtatCompte,
+  getEtatCompteDisplay,
   Sexe,
 } from "../../../enums";
 
@@ -83,13 +84,6 @@ const LABEL_TYPE_FORMATION = {
   [TypeFormation.Theorique]: "Code seulement",
   [TypeFormation.Pratique]: "Conduite seulement",
   [TypeFormation.Complet]: "Formation complète",
-};
-
-const LABEL_ETAT_COMPTE = {
-  [EtatCompte.ACTIF]: "Actif",
-  [EtatCompte.INACTIF]: "Inactif",
-  [EtatCompte.BLOQUE]: "Bloqué",
-  [EtatCompte.ARCHIVE]: "Archivé",
 };
 
 /** Date + heure (création, réception document, etc.) */
@@ -189,7 +183,32 @@ const CandidatProfilePage = () => {
     compte,
     dossierCandidat,
     documents,
+    updateCandidat,
+    uploadPhoto,
   } = useCandidatProfile(id);
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const candidatForEdit = useMemo(() => {
+    if (!profile) return null;
+    const c = contratActif;
+    return {
+      ...profile,
+      typePermisCode: c?.typePermisCode ?? profile.typePermisCode ?? "B",
+      typeFormation:
+        c?.typeFormation !== undefined && c?.typeFormation !== null
+          ? c.typeFormation
+          : profile.typeFormation,
+      centreExamen: c?.centreExamen ?? profile.centreExamen ?? "",
+    };
+  }, [profile, contratActif]);
+
+  const handleSaveProfile = useCallback(
+    async (payload) => {
+      await updateCandidat(payload);
+    },
+    [updateCandidat],
+  );
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [editingSeanceId, setEditingSeanceId] = useState(null);
@@ -231,8 +250,7 @@ const CandidatProfilePage = () => {
       ? LABEL_ETAT_DOSSIER[dossierCandidat.etatDossier] ?? "—"
       : "—";
 
-  const etatCompteLabel =
-    compte != null ? LABEL_ETAT_COMPTE[compte.etat] ?? "—" : "—";
+  const etatCompteDisplay = getEtatCompteDisplay(compte);
 
   const sexeNum =
     profile?.sexe === undefined || profile?.sexe === null
@@ -400,6 +418,8 @@ const CandidatProfilePage = () => {
   const showNomEpoux = sexeNum !== Sexe.Homme;
 
   const photoPathRaw = profile.photoPath ?? profile.PhotoPath ?? null;
+  const hasDatabasePhoto =
+    photoPathRaw != null && String(photoPathRaw).trim() !== "";
   const avatarPhotoSrc = photoLoadError
     ? candidatPlaceholder
     : resolveCandidatPhotoSrc(photoPathRaw, candidatPlaceholder);
@@ -470,6 +490,7 @@ const CandidatProfilePage = () => {
                 fontWeight: "bold",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                 border: "3px solid rgba(255,255,255,0.95)",
+                borderRadius: hasDatabasePhoto ? 0 : "50%",
                 "& img": { objectFit: "cover" },
               }}
             >
@@ -496,9 +517,17 @@ const CandidatProfilePage = () => {
                 CIN: {profile.numeroCIN ?? "—"}
               </Typography>
               <Chip
-                label={etatCompteLabel}
+                label={etatCompteDisplay.label}
+                color={etatCompteDisplay.chipColor}
                 size="small"
-                sx={{ bgcolor: "#4caf50", color: "white", fontWeight: 500 }}
+                sx={{
+                  fontWeight: 500,
+                  ...(etatCompteDisplay.chipColor === "default" && {
+                    bgcolor: "rgba(255,255,255,0.28)",
+                    color: "white",
+                    borderColor: "rgba(255,255,255,0.5)",
+                  }),
+                }}
               />
               {contratActif?.typePermisCode ? (
                 <Chip
@@ -519,6 +548,7 @@ const CandidatProfilePage = () => {
             <Button
               variant="contained"
               startIcon={<EditIcon />}
+              onClick={() => setEditDialogOpen(true)}
               sx={{
                 bgcolor: "white",
                 color: "#1e3c72",
@@ -1318,6 +1348,14 @@ const CandidatProfilePage = () => {
           </Box>
         </TabPanel>
       </Paper>
+
+      <EditCandidatDialog
+        open={editDialogOpen && Boolean(candidatForEdit)}
+        onClose={() => setEditDialogOpen(false)}
+        candidat={candidatForEdit}
+        onSave={handleSaveProfile}
+        onUploadPhoto={uploadPhoto}
+      />
     </Box>
   );
 };

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { createCandidat } from "../api/candidatService";
+import { registerCandidat } from "../api/candidatService";
+import { validateCandidat } from "../validation/addCandidatValidation";
 
 const DOCUMENT_TYPE = {
   photoIdentite: 0,
@@ -30,7 +31,26 @@ const getAutoEcoleIdFromStorage = () => {
     return 0;
   }
 };
-const useCandidatForm = () => {
+const getBackendErrorMessage = (err) => {
+  const backendData = err?.response?.data;
+  if (!backendData) {
+    return "Erreur lors de la création du candidat.";
+  }
+
+  if (typeof backendData === "string") {
+    return backendData;
+  }
+
+  const message = backendData.message;
+  const detail = backendData.detail;
+  if (message && detail) return `${message} - ${detail}`;
+  if (message) return message;
+  if (detail) return detail;
+
+  return "Erreur lors de la création du candidat.";
+};
+
+const useCandidatForm = ({ setErrMessage } = {}) => {
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -67,13 +87,23 @@ const useCandidatForm = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const clearFieldError = (fieldKey) => {
+    if (!fieldKey) return;
+    setFieldErrors((prev) => {
+      if (!prev[fieldKey]) return prev;
+      const next = { ...prev };
+      delete next[fieldKey];
+      return next;
+    });
+  };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    if (!name) return;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    clearFieldError(name);
   };
 
   const setAdresse = (adresse) => {
@@ -110,7 +140,17 @@ const useCandidatForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    if (typeof setErrMessage === "function") {
+      setErrMessage("");
+    }
+    setFieldErrors({});
+
+    const validationErrors = validateCandidat(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setLoading(false);
+      return;
+    }
 
     const parsedSexe =
       formData.sexe === "" ? null : Number.parseInt(formData.sexe, 10);
@@ -143,11 +183,14 @@ const useCandidatForm = () => {
     };
 
     try {
-      await createCandidat(payload);
+      await registerCandidat(payload);
+      setFieldErrors({});
       alert("Candidat créé avec succès !");
     } catch (err) {
       console.error(err);
-      setError("Erreur lors de la création du candidat.");
+      if (typeof setErrMessage === "function") {
+        setErrMessage(getBackendErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -161,7 +204,8 @@ const useCandidatForm = () => {
     setDocumentChecked,
     handleSubmit,
     loading,
-    error,
+    fieldErrors,
+    clearFieldError,
   };
 };
 

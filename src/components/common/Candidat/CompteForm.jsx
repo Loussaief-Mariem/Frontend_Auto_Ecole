@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { TextField, Grid, Box } from "@mui/material";
 
-const CompteForm = ({ setCompte, initialCompte }) => {
+const CompteForm = ({
+  setCompte,
+  initialCompte,
+  fieldErrors = {},
+  clearFieldError,
+}) => {
   const [compte, setLocalCompte] = useState(
     initialCompte || {
       login: "",
@@ -11,9 +16,13 @@ const CompteForm = ({ setCompte, initialCompte }) => {
   );
 
   const handleChange = (e) => {
-    const newData = { ...compte, [e.target.name]: e.target.value };
+    const { name, value } = e.target;
+    const newData = { ...compte, [name]: value };
     setLocalCompte(newData);
     setCompte(newData);
+    if (typeof clearFieldError === "function" && name) {
+      clearFieldError(name);
+    }
   };
 
   return (
@@ -28,6 +37,8 @@ const CompteForm = ({ setCompte, initialCompte }) => {
             fullWidth
             required
             variant="outlined"
+            error={!!fieldErrors.login}
+            helperText={fieldErrors.login || ""}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -39,6 +50,8 @@ const CompteForm = ({ setCompte, initialCompte }) => {
             fullWidth
             required
             variant="outlined"
+            error={!!fieldErrors.telephone}
+            helperText={fieldErrors.telephone || ""}
           />
         </Grid>
       </Grid>

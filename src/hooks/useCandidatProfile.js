@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { getCandidatProfile, updateCandidat } from "../api/candidatService";
+import {
+  getCandidatProfile,
+  updateCandidatProfil,
+  uploadCandidatPhoto,
+} from "../api/candidatService";
 
 const useCandidatProfile = (candidatId) => {
   const [profile, setProfile] = useState(null);
@@ -12,7 +16,6 @@ const useCandidatProfile = (candidatId) => {
     try {
       const data = await getCandidatProfile(candidatId);
       setProfile(data);
-      console.log(data);
       return data;
     } catch (err) {
       console.error("Erreur lors du chargement du profil complet:", err);
@@ -45,11 +48,10 @@ const useCandidatProfile = (candidatId) => {
 
   const updateCandidatInfo = async (updatedData) => {
     try {
-      const response = await updateCandidat(candidatId, updatedData);
-
-      setProfile((prev) => (prev ? { ...prev, ...response } : null));
-
-      return response;
+      await updateCandidatProfil(candidatId, updatedData);
+      const fresh = await getCandidatProfile(candidatId);
+      setProfile(fresh);
+      return fresh;
     } catch (err) {
       console.error("Erreur lors de la mise à jour:", err);
       throw new Error(
@@ -57,6 +59,25 @@ const useCandidatProfile = (candidatId) => {
       );
     }
   };
+
+  const uploadPhoto = useCallback(
+    async (file) => {
+      if (!candidatId || !file) return;
+      try {
+        await uploadCandidatPhoto(candidatId, file);
+        const fresh = await getCandidatProfile(candidatId);
+        setProfile(fresh);
+        return fresh;
+      } catch (err) {
+        console.error("Erreur upload photo:", err);
+        throw new Error(
+          err.response?.data?.message ||
+            "Échec du téléversement de la photo",
+        );
+      }
+    },
+    [candidatId],
+  );
 
   const getAdresse = () => profile?.adresse || null;
   const getCompte = () => profile?.compte || null;
@@ -76,6 +97,7 @@ const useCandidatProfile = (candidatId) => {
     error,
 
     updateCandidat: updateCandidatInfo,
+    uploadPhoto,
 
     adresse: getAdresse(),
     compte: getCompte(),
