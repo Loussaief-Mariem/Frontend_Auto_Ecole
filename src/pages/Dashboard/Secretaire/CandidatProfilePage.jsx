@@ -51,6 +51,7 @@ import {
 } from "@mui/icons-material";
 import useCandidatProfile from "../../../hooks/useCandidatProfile";
 import EditCandidatDialog from "../../../components/common/Candidat/EditCandidatDialog";
+import CandidatPdfActions from "../../../components/common/Candidat/CandidatPdfActions";
 import api from "../../../api/axios";
 import candidatPlaceholder from "../../../assets/candidat.jpg";
 import {
@@ -545,22 +546,33 @@ const CandidatProfilePage = () => {
             </Stack>
           </Grid>
           <Grid item>
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={() => setEditDialogOpen(true)}
-              sx={{
-                bgcolor: "white",
-                color: "#1e3c72",
-                "&:hover": { bgcolor: alpha("#fff", 0.9) },
-                textTransform: "none",
-                fontWeight: "bold",
-                borderRadius: 2,
-                px: 3,
-              }}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.5}
+              alignItems={{ xs: "stretch", sm: "center" }}
             >
-              Modifier le profil
-            </Button>
+              <CandidatPdfActions
+                candidatId={id}
+                contratId={contratActif?.id}
+                forHeader
+              />
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={() => setEditDialogOpen(true)}
+                sx={{
+                  bgcolor: "white",
+                  color: "#1e3c72",
+                  "&:hover": { bgcolor: alpha("#fff", 0.9) },
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  borderRadius: 2,
+                  px: 3,
+                }}
+              >
+                Modifier le profil
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </Paper>

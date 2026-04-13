@@ -90,3 +90,12 @@ export const uploadCandidatPhoto = async (id, file) => {
 
   return response.data;
 };
+
+// Télécharger fiche PDF candidat
+export const getCandidatFichePdf = async (id) => {
+  const response = await api.get(`/Candidats/${id}/fiche-pdf`, {
+    responseType: "blob", // très important
+  });
+
+  return response.data;
+};
