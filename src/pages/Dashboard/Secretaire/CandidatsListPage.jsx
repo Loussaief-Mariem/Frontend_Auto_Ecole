@@ -1,4 +1,4 @@
-// CandidatsListPage.js
+// src/pages/Dashboard/Secretaire/CandidatsListPage.jsx
 import React, { useState } from "react";
 import {
   Paper,
@@ -29,13 +29,16 @@ import {
 import {
   Search as SearchIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon,
   FilterList as FilterIcon,
   Download as DownloadIcon,
+  EventNote as EventIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext"; // Ajout de l'import
 import useCandidatsList from "../../../hooks/useCandidatsList";
 import PaginationComponent from "../../../components/common/pagination/PaginationComponent";
+import SeanceConduiteForm from "../../../components/common/seances/SeanceConduiteForm";
+import { planifierSeanceConduite } from "../../../api/seanceConduiteService";
 
 // Mapping des enums
 const ETAT_CANDIDAT = {
@@ -59,12 +62,20 @@ const ETAT_DOSSIER = {
 
 const CandidatsListPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Récupération de l'utilisateur connecté
   const [searchTerm, setSearchTerm] = useState("");
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // États pour le dialogue de planification de séance
+  const [openSeanceForm, setOpenSeanceForm] = useState(false);
+  const [selectedCandidat, setSelectedCandidat] = useState(null);
+  const [planificationLoading, setPlanificationLoading] = useState(false);
+
   // ID de l'auto-école (à récupérer depuis le contexte ou les props)
-  const autoEcoleId = 1;
+  const autoEcoleId = user?.autoEcoleId || 1; // Utilisation de l'autoEcoleId du contexte
+  // ID du moniteur (à récupérer depuis le contexte ou les props)
+  const moniteurId = user?.moniteurId || 1; // À remplacer par l'ID du moniteur connecté
 
   const {
     candidats,
@@ -78,7 +89,6 @@ const CandidatsListPage = () => {
     handleRefresh,
   } = useCandidatsList(autoEcoleId);
 
-  // Fonction pour obtenir le chip du statut candidat
   const getStatusChip = (etat) => {
     const config = ETAT_CANDIDAT[etat] || {
       label: "Inconnu",
@@ -87,7 +97,6 @@ const CandidatsListPage = () => {
     return <Chip size="small" color={config.color} label={config.label} />;
   };
 
-  // Fonction pour obtenir le chip du statut dossier
   const getDossierChip = (etatDossier) => {
     const config = ETAT_DOSSIER[etatDossier] || {
       label: "Inconnu",
@@ -114,12 +123,46 @@ const CandidatsListPage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Redirection selon le rôle
   const handleViewProfile = (id) => {
-    navigate(`/dashboard/secretaire/candidats/${id}`);
+    const role = user?.role;
+
+    if (role === "Secretaire") {
+      navigate(`/dashboard/secretaire/candidats/${id}`);
+    } else if (role === "Moniteur" || role === "Proprietaire") {
+      navigate(`/dashboard/moniteur/candidats/${id}`);
+    } else {
+      // Fallback par défaut
+      navigate(`/dashboard/secretaire/candidats/${id}`);
+    }
   };
 
-  const handleEdit = (id) => {
-    navigate(`/dashboard/secretaire/candidats/${id}/edit`);
+  const handlePlanifierSeance = (candidat) => {
+    setSelectedCandidat(candidat);
+    setOpenSeanceForm(true);
+  };
+
+  const handleSubmitSeance = async (data) => {
+    setPlanificationLoading(true);
+    try {
+      // Planifier la séance directement sans vérification
+      await planifierSeanceConduite(data);
+
+      // Afficher un message de succès
+      alert("Séance planifiée avec succès !");
+
+      // Fermer le dialogue
+      setOpenSeanceForm(false);
+      setSelectedCandidat(null);
+    } catch (err) {
+      alert(
+        err.response?.data?.message ||
+          err.message ||
+          "Erreur lors de la planification",
+      );
+    } finally {
+      setPlanificationLoading(false);
+    }
   };
 
   const handleExport = () => {
@@ -347,12 +390,12 @@ const CandidatsListPage = () => {
                           <ViewIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Modifier">
+                      <Tooltip title="Planifier séance de conduite">
                         <IconButton
-                          onClick={() => handleEdit(candidat.id)}
-                          color="secondary"
+                          onClick={() => handlePlanifierSeance(candidat)}
+                          color="success"
                         >
-                          <EditIcon />
+                          <EventIcon />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
@@ -375,6 +418,26 @@ const CandidatsListPage = () => {
           variant="outlined"
         />
       </Paper>
+
+      {/* Dialogue pour planifier une séance de conduite */}
+      <SeanceConduiteForm
+        open={openSeanceForm}
+        onClose={() => {
+          setOpenSeanceForm(false);
+          setSelectedCandidat(null);
+        }}
+        onSubmit={handleSubmitSeance}
+        moniteurs={[{ id: moniteurId, prenom: "Moniteur", nom: "Principal" }]} // À remplacer par la liste réelle des moniteurs
+        candidats={selectedCandidat ? [selectedCandidat] : []}
+        initialData={
+          selectedCandidat
+            ? {
+                candidatId: selectedCandidat.id,
+              }
+            : null
+        }
+        loading={planificationLoading}
+      />
     </Box>
   );
 };

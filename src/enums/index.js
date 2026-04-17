@@ -67,11 +67,7 @@ export function getEtatCompteDisplay(compte) {
     if (lower === "true" || lower === "actif") {
       return { ...ETAT_COMPTE_DISPLAY[EtatCompte.ACTIF] };
     }
-    if (
-      lower === "false" ||
-      lower === "inactif" ||
-      lower === "inactive"
-    ) {
+    if (lower === "false" || lower === "inactif" || lower === "inactive") {
       return { ...ETAT_COMPTE_DISPLAY[EtatCompte.INACTIF] };
     }
     if (lower === "bloque" || lower === "bloqué") {
@@ -121,4 +117,148 @@ export const Role = {
   Secretaire: 1,
   Moniteur: 2,
   Candidat: 3,
+};
+
+// Type de permis (aligné avec le backend)
+export const TypePermis = [
+  {
+    code: "AA",
+    description: "Cyclomoteurs, vélomoteurs, voiturettes...",
+    ageMin: 16,
+  },
+  {
+    code: "A",
+    description: "Toutes motos",
+    ageMin: 18,
+    permisPrealable: "AA",
+  },
+  {
+    code: "B",
+    description: "Voitures (≤ 3500 kg)",
+    ageMin: 18,
+  },
+  {
+    code: "BE",
+    description: "Voiture + remorque > 750kg",
+    ageMin: 20,
+    permisPrealable: "B",
+  },
+  {
+    code: "C",
+    description: "Poids lourd",
+    ageMin: 20,
+  },
+  {
+    code: "CE",
+    description: "Poids lourd + remorque",
+    ageMin: 20,
+    permisPrealable: "C",
+  },
+  {
+    code: "D",
+    description: "Transport en commun",
+    ageMin: 21,
+    permisPrealable: "G",
+  },
+  {
+    code: "DE",
+    description: "Bus + remorque",
+    ageMin: 21,
+    permisPrealable: "D",
+  },
+  {
+    code: "G",
+    description: "Taxi / transport rural",
+    ageMin: 20,
+  },
+  {
+    code: "H",
+    description: "Permis spécial",
+    ageMin: 18,
+  },
+];
+
+// Type Examen (corrigé selon backend)
+export const TypeExamen = {
+  CODE: 0,
+  CIRCULATION: 1,
+  MANOEUVRE: 2,
+};
+
+// TypeConduite (corrigé selon backend C#)
+export const TypeConduite = {
+  MANOEUVRE: 0,
+  PARKING: 1,
+};
+
+// Libellés pour TypeConduite
+export const TYPE_CONDUITE_LABELS = {
+  [TypeConduite.MANOEUVRE]: { label: "Manœuvre", color: "primary" },
+  [TypeConduite.PARKING]: { label: "Parking", color: "secondary" },
+};
+
+// Theme de Code (corrigé)
+export const ThemeCode = {
+  SIGNALISATION: 0,
+  CONDUCTEUR_VEHICULE: 1,
+  ARRET_STATIONNEMENT: 2,
+  CROISEMENT_DEPASSEMENT: 3,
+  PRIORITE: 4,
+  CIRCULATION: 5,
+  DELITS: 6,
+  PREMIERS_SECOURS: 7,
+  MAINTENANCE_ENERGIE: 8,
+  TRANSPORT_MATIERES_DANGEREUSES: 9,
+};
+
+// Libellés pour ThemeCode
+export const THEME_CODE_LABELS = {
+  [ThemeCode.SIGNALISATION]: { label: "Signalisation", color: "primary" },
+  [ThemeCode.CONDUCTEUR_VEHICULE]: {
+    label: "Conducteur et véhicule",
+    color: "secondary",
+  },
+  [ThemeCode.ARRET_STATIONNEMENT]: {
+    label: "Arrêt et stationnement",
+    color: "info",
+  },
+  [ThemeCode.CROISEMENT_DEPASSEMENT]: {
+    label: "Croisement et dépassement",
+    color: "warning",
+  },
+  [ThemeCode.PRIORITE]: { label: "Priorité", color: "success" },
+  [ThemeCode.CIRCULATION]: { label: "Circulation", color: "error" },
+  [ThemeCode.DELITS]: { label: "Délits", color: "default" },
+  [ThemeCode.PREMIERS_SECOURS]: { label: "Premiers secours", color: "primary" },
+  [ThemeCode.MAINTENANCE_ENERGIE]: {
+    label: "Maintenance et énergie",
+    color: "secondary",
+  },
+  [ThemeCode.TRANSPORT_MATIERES_DANGEREUSES]: {
+    label: "Transport matières dangereuses",
+    color: "error",
+  },
+};
+
+// Statut Seance
+export const StatutSeance = {
+  PLANIFIEE: 0,
+  ANNULEE: 1,
+  TERMINEE: 2,
+};
+
+// Libellés pour StatutSeance
+export const STATUT_SEANCE_LABELS = {
+  [StatutSeance.PLANIFIEE]: { label: "Planifiée", color: "primary" },
+  [StatutSeance.ANNULEE]: { label: "Annulée", color: "error" },
+  [StatutSeance.TERMINEE]: { label: "Terminée", color: "success" },
+};
+
+// StatutExamen
+export const StatutExamen = {
+  PROGRAMME: 1,
+  SATISFAIT: 2,
+  AJOURNE: 3,
+  REPORTE: 4,
+  ANNULE: 5,
 };

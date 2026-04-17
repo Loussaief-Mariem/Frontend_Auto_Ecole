@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  // 🔹 Register
+  //  Register
   const register = async (data) => {
     const res = await authService.register(data);
 
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  // 🔹 Logout
+  //  Logout
   const logout = async () => {
     const refreshToken = localStorage.getItem("refreshToken");
     if (refreshToken) {

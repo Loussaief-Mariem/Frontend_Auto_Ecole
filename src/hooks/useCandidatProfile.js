@@ -79,11 +79,13 @@ const useCandidatProfile = (candidatId) => {
     [candidatId],
   );
 
-  const getAdresse = () => profile?.adresse || null;
-  const getCompte = () => profile?.compte || null;
-  const getDossierCandidat = () => profile?.dossierCandidat || null;
-  const getContrats = () => profile?.contrats || [];
-  const getDocuments = () => profile?.dossierCandidat?.documents || [];
+  const getAdresse = () => profile?.adresse ?? profile?.Adresse ?? null;
+  const getCompte = () => profile?.compte ?? profile?.Compte ?? null;
+  const getDossierCandidat = () =>
+    profile?.dossierCandidat ?? profile?.DossierCandidat ?? null;
+  const getContrats = () => profile?.contrats ?? profile?.Contrats ?? [];
+  const getDocuments = () =>
+    getDossierCandidat()?.documents ?? getDossierCandidat()?.Documents ?? [];
 
   const getContratActif = () => {
     const contrats = getContrats();

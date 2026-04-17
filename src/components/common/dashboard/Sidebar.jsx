@@ -57,7 +57,13 @@ const menusByRole = {
       icon: <PriceChangeOutlinedIcon />,
       path: "/dashboard/proprietaire/tarifs",
     },
+    {
+      text: "Planning conduite",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/proprietaire/planning-conduite",
+    },
   ],
+
   Secretaire: [
     {
       text: "Dashboard",
@@ -65,7 +71,7 @@ const menusByRole = {
       path: "/dashboard/secretaire",
     },
     {
-      text: "Ajouter un candidat", // ← Nouveau lien ajouté
+      text: "Ajouter un candidat",
       icon: <PersonAddOutlinedIcon />,
       path: "/dashboard/secretaire/add-candidat",
     },
@@ -90,6 +96,7 @@ const menusByRole = {
       path: "/dashboard/secretaire/planning",
     },
   ],
+
   Moniteur: [
     {
       text: "Dashboard",
@@ -97,14 +104,14 @@ const menusByRole = {
       path: "/dashboard/moniteur",
     },
     {
-      text: "Gestion des séances",
-      icon: <EventAvailableOutlinedIcon />,
-      path: "/dashboard/moniteur/seances",
+      text: "Planning conduite",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/moniteur/planning-conduite",
     },
     {
-      text: "Planning",
-      icon: <CalendarMonthOutlinedIcon />,
-      path: "/dashboard/moniteur/planning",
+      text: "Mes candidats",
+      icon: <SchoolOutlinedIcon />,
+      path: "/dashboard/candidats", // 👈 IMPORTANT
     },
   ],
 };

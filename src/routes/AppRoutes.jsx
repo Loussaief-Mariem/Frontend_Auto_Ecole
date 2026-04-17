@@ -18,6 +18,8 @@ import AddCandidatPage from "../pages/Dashboard/Secretaire/AddCandidatPage";
 import PrivateRoute from "./PrivateRoute";
 import CandidatProfilePage from "../pages/Dashboard/Secretaire/CandidatProfilePage";
 import CandidatsListPage from "../pages/Dashboard/Secretaire/CandidatsListPage";
+import PlanningConduitePage from "../pages/Dashboard/Moniteur/PlanningConduitePage";
+import CandidatProfilMoniteur from "../pages/Dashboard/Moniteur/CandidatProfilMoniteur"; // Ajout
 
 const AppRoutes = () => {
   return (
@@ -51,15 +53,24 @@ const AppRoutes = () => {
           </Route>
 
           {/* Moniteur */}
-          <Route path="moniteur" element={<HomeMoniteur />} />
+          <Route path="moniteur">
+            <Route index element={<HomeMoniteur />} />
+            <Route
+              path="planning-conduite"
+              element={<PlanningConduitePage />}
+            />
+            {/* Ajout de la route pour voir le profil d'un candidat */}
+            <Route path="candidats/:id" element={<CandidatProfilMoniteur />} />
+          </Route>
 
           {/* Secrétaire */}
           <Route path="secretaire">
             <Route index element={<HomeSecretaire />} />
             <Route path="add-candidat" element={<AddCandidatPage />} />
-            <Route path="candidats" element={<CandidatsListPage />} />
+
             <Route path="candidats/:id" element={<CandidatProfilePage />} />
           </Route>
+          <Route path="candidats" element={<CandidatsListPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
