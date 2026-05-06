@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import * as authService from "../api/authService";
 import { setTokens, clearTokens, getStoredUser } from "../utils/tokenHelper";
 
@@ -8,24 +8,30 @@ export const AuthProvider = ({ children }) => {
   // Initialiser l'utilisateur depuis localStorage si déjà connecté
   const [user, setUser] = useState(getStoredUser());
   console.log("AuthProvider initialized with user:", user);
-  // 🔹 Login
+  //  Login
   const login = async (data) => {
     const res = await authService.login(data);
 
     console.log("Login response:", res);
-
-    // 🔐 tokens
+    //  tokens
     setTokens(res);
-    console.log("Tokens stored:", {
-      token: res.token,
-      refreshToken: res.refreshToken,
-    });
+    // console.log("Tokens stored:", {
+    //   token: res.token,
+    //   refreshToken: res.refreshToken,
+    // });
 
-    // 🎯 user
+    //  user
     const userInfo = {
       login: res.login,
       role: res.role,
-      user: res.user, //
+      autoEcoleId: res.autoEcoleId,
+      contratId: res.contratId ?? res.user?.contratId,
+      user: res.user,
+      autoEcoleNom:
+        res.autoEcoleNom ??
+        res.user?.autoEcoleNom ??
+        res.user?.nomAutoEcole ??
+        null,
     };
     console.log("User info to store:", userInfo);
     localStorage.setItem("user", JSON.stringify(userInfo));
@@ -33,16 +39,13 @@ export const AuthProvider = ({ children }) => {
 
     return res;
   };
-
   //  Register
   const register = async (data) => {
     const res = await authService.register(data);
-
     // Stocker tokens si renvoyés
     if (res.token && res.refreshToken) {
       setTokens(res);
     }
-
     // Stocker infos utilisateur
     const userInfo = {
       login: res.login,
@@ -50,6 +53,7 @@ export const AuthProvider = ({ children }) => {
       proprietaireId: res.idProprietaire,
       autoEcoleId: res.autoEcoleId,
       nomAutoEcole: res.nomAutoEcole,
+      autoEcoleNom: res.autoEcoleNom ?? res.nomAutoEcole ?? null,
     };
     localStorage.setItem("user", JSON.stringify(userInfo));
     setUser(userInfo);
@@ -75,6 +79,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
 // Hook pour utiliser le contexte
 export const useAuth = () => useContext(AuthContext);

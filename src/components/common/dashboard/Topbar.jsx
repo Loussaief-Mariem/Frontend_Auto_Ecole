@@ -22,21 +22,29 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
-import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
+import {
+  getAuthDisplayName,
+  getAutoEcoleNom,
+  getRoleLabel,
+} from "../../../utils/dashboardUserLabels";
 
 const Topbar = ({ onToggleSidebar }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
-  const roleLabel = useMemo(() => {
-    const map = {
-      Proprietaire: "Propriétaire",
-      Secretaire: "Secrétaire",
-      Moniteur: "Moniteur",
-    };
-    return map[user?.role] || "Dashboard";
-  }, [user?.role]);
+  const roleLabel = useMemo(() => getRoleLabel(user?.role) || "Dashboard", [user?.role]);
+  const displayName = useMemo(() => getAuthDisplayName(user), [user]);
+  const autoEcoleNom = useMemo(() => getAutoEcoleNom(user), [user]);
+
+  const handleProfileClick = () => {
+    handleCloseMenu();
+    if (user?.role === "Candidat") {
+      navigate("/dashboard/candidat/profile");
+    } else {
+      navigate("/dashboard/proprietaire/profile");
+    }
+  };
 
   const handleOpenMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -82,13 +90,18 @@ const Topbar = ({ onToggleSidebar }) => {
             <MenuRoundedIcon />
           </IconButton>
 
-          <Box>
-            <Typography variant="h6" fontWeight={700} lineHeight={1.1}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6" fontWeight={700} lineHeight={1.1} noWrap>
               AutoPilot
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Espace {roleLabel}
+            <Typography variant="caption" color="text.secondary" display="block" noWrap>
+              {displayName ? `${displayName} · ${roleLabel}` : `Espace ${roleLabel}`}
             </Typography>
+            {autoEcoleNom ? (
+              <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                {autoEcoleNom}
+              </Typography>
+            ) : null}
           </Box>
         </Stack>
 
@@ -122,7 +135,7 @@ const Topbar = ({ onToggleSidebar }) => {
           <Tooltip title="Profil">
             <IconButton
               color="primary"
-              onClick={() => navigate("/dashboard/proprietaire/profile")}
+              onClick={handleProfileClick}
             >
               <PersonRoundedIcon />
             </IconButton>
@@ -142,7 +155,7 @@ const Topbar = ({ onToggleSidebar }) => {
               fontSize: 13,
             }}
           >
-            {user?.login?.[0]?.toUpperCase() || "A"}
+            {(displayName?.[0] || user?.login?.[0] || "A").toUpperCase()}
           </Avatar>
         </Stack>
 
@@ -152,10 +165,7 @@ const Topbar = ({ onToggleSidebar }) => {
           onClose={handleCloseMenu}
         >
           <MenuItem
-            onClick={() => {
-              handleCloseMenu();
-              navigate("/dashboard/proprietaire/profile");
-            }}
+            onClick={handleProfileClick}
           >
             <PersonRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
             Mon profil

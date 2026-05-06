@@ -13,7 +13,6 @@ import {
   OutlinedInput,
   Alert,
   CircularProgress,
-  
   FormHelperText,
 } from "@mui/material";
 
@@ -160,6 +159,9 @@ const AddUser = () => {
 
     setLoading(true);
     setError(null);
+    console.log("Submitting form with data:", form);
+    console.log("Auto-école ID being used:", autoEcoleId);
+    console.log("Auto-école ID being used:", parseInt(autoEcoleId));
 
     try {
       // Prepare payload matching your example
@@ -167,14 +169,15 @@ const AddUser = () => {
         nom: form.nom.trim(),
         prenom: form.prenom.trim(),
         typesPermisCodes: form.typesPermisCodes,
-        idAutoEcole: parseInt(autoEcoleId),
+     
+        telephone: form.telephone.trim(),
         compteDto: {
           login: form.email.trim(),
-          telephone: form.telephone.trim(),
           role: parseInt(form.role),
+             autoEcoleId: parseInt(autoEcoleId),
         },
       };
-
+      console.log("Prepared payload:", payload);
       console.log("Payload to submit:", JSON.stringify(payload, null, 2));
 
       let res;

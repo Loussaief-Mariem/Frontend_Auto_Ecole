@@ -1,36 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { registerCandidat } from "../api/candidatService";
 import { validateCandidat } from "../validation/addCandidatValidation";
-
+import { useAuth } from "../context/AuthContext";
+import { format } from "date-fns";
 const DOCUMENT_TYPE = {
   photoIdentite: 0,
   copieCIN: 1,
   certificatMedical: 2,
 };
 
-const getAutoEcoleIdFromStorage = () => {
-  try {
-    const rawUser = localStorage.getItem("user");
-    if (!rawUser) return 0;
-
-    const parsedUser = JSON.parse(rawUser);
-    const autoEcoleId =
-      parsedUser?.autoEcoleId ??
-      parsedUser?.idAutoEcole ??
-      parsedUser?.user?.autoEcoleId ??
-      parsedUser?.user?.idAutoEcole ??
-      0;
-    if (autoEcoleId === undefined || autoEcoleId === null) return 0;
-
-    return autoEcoleId;
-  } catch (error) {
-    console.error(
-      "Impossible de lire autoEcoleId depuis le localStorage:",
-      error,
-    );
-    return 0;
-  }
-};
 const getBackendErrorMessage = (err) => {
   const backendData = err?.response?.data;
   if (!backendData) {
@@ -51,6 +30,9 @@ const getBackendErrorMessage = (err) => {
 };
 
 const useCandidatForm = ({ setErrMessage } = {}) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  console.log("User from AuthContext in useCandidatForm:", user);
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -60,25 +42,21 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
     dateDelivranceCIN: null,
     lieuDeNaissance: "",
     sexe: "", // 0 = M, 1 = F
-    adresse: {
-      rue: "",
-      ville: "",
-      gouvernorat: "",
-      pays: "Tunisie",
-    },
+    adresse_rue: "",
+    adresse_ville: "",
+    moniteurId: "",
     compte: {
       login: "",
       telephone: "",
       role: 3,
+      autoEcoleId: user.user?.autoEcoleId || user?.autoEcoleId || null,
     },
     dossier: {
       candidatId: 0,
       documents: [],
     },
-    autoEcoleId: getAutoEcoleIdFromStorage(),
     typePermisCode: "B",
     typeFormation: "", // 0 = Theorique, 1 = Pratique, 2 = Complet
-    centreExamen: "",
   });
   const [documentsState, setDocumentsState] = useState({
     photoIdentite: false,
@@ -102,7 +80,18 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (!name) return;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      
+      // Si on choisit Masculin (0), on vide le nom d'époux
+      if (name === "sexe" && value === 0) {
+        next.nomEpoux = "";
+      }
+      
+      return next;
+    });
+
     clearFieldError(name);
   };
 
@@ -111,7 +100,10 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
   };
 
   const setCompte = (compte) => {
-    setFormData((prev) => ({ ...prev, compte }));
+    setFormData((prev) => ({
+      ...prev,
+      compte: { ...prev.compte, ...compte },
+    }));
   };
 
   const setDocumentChecked = (name, checked) => {
@@ -160,17 +152,23 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
         : Number.parseInt(formData.typeFormation, 10);
 
     const payload = {
-      ...formData,
+      nom: formData.nom,
+      prenom: formData.prenom,
+      nomEpoux: formData.nomEpoux,
+      numeroCIN: formData.numeroCIN,
       dateNaissance: formData.dateNaissance
-        ? new Date(formData.dateNaissance).toISOString()
+        ? format(new Date(formData.dateNaissance), "yyyy-MM-dd'T'HH:mm:ss")
+        : null,
+      lieuDeNaissance: formData.lieuDeNaissance,
+      telephone: formData.compte.telephone,
+      moniteurId: formData.moniteurId
+        ? Number.parseInt(formData.moniteurId, 10)
         : null,
       dateDelivranceCIN: formData.dateDelivranceCIN
-        ? new Date(formData.dateDelivranceCIN).toISOString()
+        ? format(new Date(formData.dateDelivranceCIN), "yyyy-MM-dd'T'HH:mm:ss")
         : null,
       sexe: Number.isNaN(parsedSexe) ? null : parsedSexe,
-      typeFormation: Number.isNaN(parsedTypeFormation)
-        ? null
-        : parsedTypeFormation,
+      adresse: `${formData.adresse_rue}, ${formData.adresse_ville}`,
       dossier: {
         candidatId: formData?.dossier?.candidatId ?? 0,
         documents: (formData?.dossier?.documents || []).length
@@ -180,12 +178,22 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
               etat: documentsState[key] ? 1 : 0,
             })),
       },
+      compte: {
+        login: formData.compte.login,
+        role: formData.compte.role,
+        autoEcoleId: formData.compte.autoEcoleId,
+      },
+      typePermisCode: formData.typePermisCode,
+      typeFormation: Number.isNaN(parsedTypeFormation)
+        ? null
+        : parsedTypeFormation,
     };
 
     try {
       await registerCandidat(payload);
       setFieldErrors({});
       alert("Candidat créé avec succès !");
+      navigate("/dashboard/candidats");
     } catch (err) {
       console.error(err);
       if (typeof setErrMessage === "function") {

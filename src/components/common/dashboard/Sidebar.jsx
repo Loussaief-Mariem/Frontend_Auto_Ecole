@@ -18,7 +18,13 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import PriceChangeOutlinedIcon from "@mui/icons-material/PriceChangeOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { blueGradients } from "../../../theme/muiTheme";
@@ -33,20 +39,16 @@ const menusByRole = {
       path: "/dashboard/proprietaire",
     },
     {
-      text: "Gestion des utilisateurs",
+      text: "Gestion des Comptes",
       icon: <PeopleAltOutlinedIcon />,
       path: "/dashboard/proprietaire/gestion-utilisateurs",
     },
     {
-      text: "Ajouter un utilisateur",
+      text: "Ajouter personnel",
       icon: <PersonAddOutlinedIcon />,
       path: "/dashboard/proprietaire/adduser",
     },
-    {
-      text: "Gestion des comptes",
-      icon: <GroupOutlinedIcon />,
-      path: "/dashboard/proprietaire/comptes",
-    },
+
     {
       text: "Gestion des séances",
       icon: <EventAvailableOutlinedIcon />,
@@ -57,10 +59,20 @@ const menusByRole = {
       icon: <PriceChangeOutlinedIcon />,
       path: "/dashboard/proprietaire/tarifs",
     },
+    // {
+    //   text: "Planning conduite",
+    //   icon: <CalendarMonthOutlinedIcon />,
+    //   path: "/dashboard/proprietaire/planning-conduite",
+    // },
+    {
+      text: "Mon planning",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/moniteur/planning",
+    },
     {
       text: "Planning conduite",
-      icon: <CalendarMonthOutlinedIcon />,
-      path: "/dashboard/proprietaire/planning-conduite",
+      icon: <EventAvailableOutlinedIcon />,
+      path: "/dashboard/moniteur/planning-conduite",
     },
   ],
 
@@ -75,25 +87,22 @@ const menusByRole = {
       icon: <PersonAddOutlinedIcon />,
       path: "/dashboard/secretaire/add-candidat",
     },
-    {
-      text: "Gestion des paiements",
-      icon: <PaymentsOutlinedIcon />,
-      path: "/dashboard/secretaire/paiements",
-    },
+
     {
       text: "Gestion des candidats",
       icon: <SchoolOutlinedIcon />,
-      path: "/dashboard/secretaire/candidats",
+      path: "/dashboard/candidats",
     },
+
     {
-      text: "Gestion des séances",
-      icon: <EventAvailableOutlinedIcon />,
-      path: "/dashboard/secretaire/seances",
-    },
-    {
-      text: "Planning",
+      text: "Planifier séances",
       icon: <CalendarMonthOutlinedIcon />,
       path: "/dashboard/secretaire/planning",
+    },
+    {
+      text: "Gestion Tests Blancs",
+      icon: <AssignmentOutlinedIcon />,
+      path: "/dashboard/secretaire/test-management",
     },
   ],
 
@@ -104,14 +113,56 @@ const menusByRole = {
       path: "/dashboard/moniteur",
     },
     {
-      text: "Planning conduite",
+      text: "Mon planning",
       icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/moniteur/planning",
+    },
+    {
+      text: "Planning conduite",
+      icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/moniteur/planning-conduite",
     },
     {
       text: "Mes candidats",
       icon: <SchoolOutlinedIcon />,
-      path: "/dashboard/candidats", // 👈 IMPORTANT
+      path: "/dashboard/candidats",
+    },
+  ],
+  Candidat: [
+    {
+      text: "Tableau de bord",
+      icon: <DashboardRoundedIcon />,
+      path: "/dashboard/candidat",
+    },
+    {
+      text: "Mon profil",
+      icon: <PersonOutlineIcon />,
+      path: "/dashboard/candidat/profile",
+    },
+    {
+      text: "Mes séances",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/candidat/seances",
+    },
+    {
+      text: "Mes heures",
+      icon: <AccessTimeOutlinedIcon />,
+      path: "/dashboard/candidat/heures",
+    },
+    {
+      text: "Mes examens",
+      icon: <AssignmentOutlinedIcon />,
+      path: "/dashboard/candidat/examens",
+    },
+    {
+      text: "Finances",
+      icon: <PaymentsOutlinedIcon />,
+      path: "/dashboard/candidat/finances",
+    },
+    {
+      text: "Tests Blancs",
+      icon: <FactCheckOutlinedIcon />,
+      path: "/dashboard/candidat/tests", // I'll assume they want a list of tests first
     },
   ],
 };

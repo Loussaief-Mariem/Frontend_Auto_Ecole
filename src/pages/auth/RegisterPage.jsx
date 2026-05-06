@@ -25,8 +25,6 @@ import {
 import RegisterStepFields from "./register/RegisterStepFields";
 import { validateRegisterStep } from "../../validation/registerValidation";
 
-import AdresseService from "../../api/adresseService";
-
 const registerPaperSx = {
   width: "100%",
   maxWidth: { xs: "100%", sm: 480 },
@@ -47,21 +45,6 @@ const RegisterPage = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [errors, setErrors] = useState({});
-  const [gouvernoratsList, setGouvernoratsList] = useState([]);
-
-  //  CORRECT : useEffect DANS le composant
-  useEffect(() => {
-    const loadGouvernorats = async () => {
-      try {
-        const data = await AdresseService.getGouvernoratsByPays("Tunisie");
-        setGouvernoratsList(data || []);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    loadGouvernorats();
-  }, []);
 
   const lastStep = REGISTER_STEPS.length - 1;
 
@@ -109,33 +92,59 @@ const RegisterPage = () => {
 
     try {
       const payload = {
-        NomProp: form.NomProp,
-        PrenomProp: form.PrenomProp,
-        NomEcole: form.NomEcole,
-        CodeEtablissement: form.CodeEtablissement,
-        IdentifiantFiscal: form.IdentifiantFiscal,
-        Email: form.Email,
-        Telephone: form.Telephone,
-        Login: form.Email,
-
-        TypePermisCode: form.TypePermisCode,
-
-        Adresse: {
-          Rue: form.Adresse.Rue,
-          Ville: form.Adresse.Ville,
-          Gouvernorat: form.Adresse.Gouvernorat,
-          Pays: "Tunisie",
-        },
+        nomProp: form.NomProp,
+        prenomProp: form.PrenomProp,
+        nomEcole: form.NomEcole,
+        codeEtablissement: form.CodeEtablissement,
+        identifiantFiscal: form.IdentifiantFiscal,
+        email: form.Email,
+        telephone: form.Telephone,
+        typePermisCode: form.TypePermisCode,
+        adresse: `${form.Adresse.Rue}, ${form.Adresse.Ville}`,
       };
+      console.log("Payload d'inscription envoyé au backend :", payload);
+      const res = await register(payload); 
+    //  console.log("ID du compte créé  res.data.idCompte :", res.data.idCompte);
 
-      await register(payload);
+      console.log("Email du compte créé  res :", res) ;
+      console.log("Inscription réussie, réponse du backend :", res);
 
-      alert("Auto-école créée avec succès !");
-      navigate("/login");
-    } catch (err) {
-      setErrorMessage(
-        err.response?.data?.message || "Erreur lors de l'inscription",
+      console.log("ID du compte créé  res.idCompte   :", res.idCompte);
+      // 🔥 SAFE STORAGE (important)
+      localStorage.setItem(
+        "pendingActivation",
+        JSON.stringify({
+          id:res.idCompte,
+          email: res.login || form.Email,
+        }),
       );
+
+      // 🔥 SINGLE NAVIGATION ONLY
+      navigate("/check-email", {
+        state: {
+          id:  res.idCompte,
+          email: res.login || form.Email,
+        },
+      });
+    } catch (err) {
+      console.error("Erreur lors de l'inscription:", err);
+      let errorMsg = "Erreur lors de l'inscription. Veuillez réessayer.";
+      if (err.response && err.response.data) {
+        if (typeof err.response.data === "string") {
+          errorMsg = err.response.data;
+        } else if (err.response.data.message) {
+          errorMsg = err.response.data.message;
+        } else if (typeof err.response.data === "object") {
+          // Extraire les messages d'erreur si c'est un dictionnaire d'erreurs de validation
+          const messages = Object.values(err.response.data).filter(v => typeof v === "string");
+          if (messages.length > 0) {
+            errorMsg = messages.join(" | ");
+          }
+        }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setErrorMessage(errorMsg);
       setOpenSnackbar(true);
     } finally {
       setLoading(false);
@@ -230,7 +239,6 @@ const RegisterPage = () => {
               form={form}
               setForm={setForm}
               errors={errors}
-              gouvernoratsList={gouvernoratsList}
             />
           </Box>
 

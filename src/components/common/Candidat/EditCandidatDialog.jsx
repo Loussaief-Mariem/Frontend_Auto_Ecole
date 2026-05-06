@@ -30,10 +30,9 @@ import {
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import AdresseForm from "./AdresseForm";
 import CompteForm from "./CompteForm";
-import AdresseService from "../../../api/adresseService";
 import api from "../../../api/axios";
+import { useAuth } from "../../../context/AuthContext";
 import candidatPlaceholder from "../../../assets/candidat.jpg";
 import {
   Sexe,
@@ -100,16 +99,11 @@ function resolveCandidatPhotoSrc(photoPath, placeholder) {
 }
 
 /** Corps PUT `updateCandidatProfil` (aligné sur le contrat API). */
-function buildUpdateProfilPayload(formData, candidat) {
+function buildUpdateProfilPayload(formData, candidat, autoEcoleId) {
   const sexeVal =
     formData.sexe === "" ? null : Number(formData.sexe);
 
-  const adresse = {
-    rue: formData.adresse?.rue ?? "",
-    ville: formData.adresse?.ville ?? "",
-    gouvernorat: formData.adresse?.gouvernorat ?? "",
-    pays: formData.adresse?.pays ?? "",
-  };
+  const concatenatedAdresse = `${formData.adresse?.rue || ""}, ${formData.adresse?.ville || ""}`;
 
   const compte = {
     id: candidat?.compte?.id ?? 0,
@@ -117,7 +111,7 @@ function buildUpdateProfilPayload(formData, candidat) {
     telephone: formData.compte?.telephone ?? "",
   };
 
-  const contrat = candidat?.contrats?.[0];
+  const contrat = candidat?.contrat;
   const idContrat = contrat?.id ?? 0;
 
   const dossierCandidat = candidat?.dossierCandidat;
@@ -155,17 +149,22 @@ function buildUpdateProfilPayload(formData, candidat) {
       ? new Date(formData.dateDelivranceCIN).toISOString()
       : null,
     sexe: sexeVal,
-    adresse,
-    compte,
+    adresse: concatenatedAdresse,
+    autoEcoleId: autoEcoleId,
+    compte: {
+      id: candidat?.compte?.id ?? 0,
+      login: formData.compte?.login ?? "",
+    },
+    telephone: formData.compte?.telephone ?? "",
     idContrat,
     typePermisCode: formData.typePermisCode ?? "",
     typeFormation: typeFormationVal,
-    centreExamen: formData.centreExamen ?? "",
     dossier,
   };
 }
 
 const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     id: "",
     nom: "",
@@ -178,12 +177,9 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
     sexe: "",
     typePermisCode: "B",
     typeFormation: "",
-    centreExamen: "",
     adresse: {
       rue: "",
       ville: "",
-      gouvernorat: "",
-      pays: "Tunisie",
     },
     compte: {
       login: "",
@@ -192,7 +188,6 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
     documentChecks: initDocumentChecks(null),
   });
 
-  const [paysList, setPaysList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dateErrors, setDateErrors] = useState({});
@@ -229,16 +224,18 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
           candidat.typeFormation !== null
             ? Number(candidat.typeFormation)
             : "",
-        centreExamen: candidat.centreExamen || "",
-        adresse: candidat.adresse || {
-          rue: "",
-          ville: "",
-          gouvernorat: "",
-          pays: "Tunisie",
-        },
+        adresse: typeof candidat.adresse === "string" 
+          ? {
+              rue: (candidat.adresse.split(",")[0] || "").trim(),
+              ville: (candidat.adresse.split(",")[1] || "").trim(),
+            }
+          : {
+              rue: candidat.adresse?.rue || "",
+              ville: candidat.adresse?.ville || "",
+            },
         compte: {
           login: candidat.compte?.login ?? "",
-          telephone: candidat.compte?.telephone ?? "",
+          telephone: candidat.telephone || candidat.compte?.telephone || "",
         },
         documentChecks: initDocumentChecks(candidat.dossierCandidat),
       });
@@ -248,18 +245,6 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
   useEffect(() => {
     setPhotoPreviewError(false);
   }, [candidat?.id, candidat?.photoPath, candidat?.PhotoPath, open]);
-
-  useEffect(() => {
-    const fetchPays = async () => {
-      try {
-        const data = await AdresseService.getPays();
-        setPaysList(data);
-      } catch (fetchError) {
-        console.error("Erreur lors du chargement des pays :", fetchError);
-      }
-    };
-    fetchPays();
-  }, []);
 
   const validateCINDates = (dateNaissance, dateDelivranceCIN) => {
     const errors = {};
@@ -325,10 +310,6 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
     }
   };
 
-  const setAdresse = (adresse) => {
-    setFormData((prev) => ({ ...prev, adresse }));
-  };
-
   const setCompte = (compte) => {
     setFormData((prev) => ({ ...prev, compte }));
   };
@@ -377,7 +358,7 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
     setLoading(true);
     setError("");
 
-    const payload = buildUpdateProfilPayload(formData, candidat);
+    const payload = buildUpdateProfilPayload(formData, candidat, user?.autoEcoleId);
 
     try {
       await onSave(payload);
@@ -645,12 +626,34 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
                 Adresse
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              <AdresseForm
-                key={candidat?.id ?? "adresse"}
-                setAdresse={setAdresse}
-                initialAdresse={formData.adresse}
-                paysOptions={paysList}
-              />
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Rue"
+                    fullWidth
+                    size="small"
+                    value={formData.adresse.rue}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      adresse: { ...prev.adresse, rue: e.target.value }
+                    }))}
+                    placeholder="Ex: Route gremda"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Ville"
+                    fullWidth
+                    size="small"
+                    value={formData.adresse.ville}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      adresse: { ...prev.adresse, ville: e.target.value }
+                    }))}
+                    placeholder="Ex: Tunisie"
+                  />
+                </Grid>
+              </Grid>
             </Box>
 
             {/* Documents du dossier */}
@@ -733,16 +736,7 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Centre d'examen"
-                    name="centreExamen"
-                    value={formData.centreExamen}
-                    onChange={handleChange}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
+
               </Grid>
             </Box>
           </Stack>

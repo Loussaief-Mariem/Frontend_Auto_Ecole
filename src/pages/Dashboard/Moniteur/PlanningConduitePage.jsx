@@ -1,272 +1,317 @@
 // src/pages/Dashboard/Moniteur/PlanningConduitePage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
-  Paper,
-  Typography,
   Box,
+  Typography,
+  CircularProgress,
   Button,
-  Card,
-  CardContent,
-  Grid,
-  Chip,
-  IconButton,
+  Alert,
+  Snackbar,
+  Paper,
+  Tabs,
+  Tab,
+  Badge,
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
-  TextField,
-  Rating,
-  Alert,
-  Tabs,
-  Tab,
-  CircularProgress,
 } from "@mui/material";
-import {
-  Add,
-  CheckCircle,
-  Cancel,
-  Comment,
-  EventNote,
-} from "@mui/icons-material";
+import AddIcon from "@mui/icons-material/Add";
+
 import { useAuth } from "../../../context/AuthContext";
 import { useSeancesConduite } from "../../../hooks/useSeancesConduite";
+import { useContrats } from "../../../hooks/useContrats";
+import PlanningCalendar from "../../../components/common/seances/PlanningCalendar";
 import SeanceConduiteForm from "../../../components/common/seances/SeanceConduiteForm";
-import { TYPE_CONDUITE_LABELS } from "../../../enums";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import SeanceFilters from "../../../components/common/seances/SeanceFilters";
 
 const PlanningConduitePage = () => {
   const { user } = useAuth();
-  const [openForm, setOpenForm] = useState(false);
-  const [openRemarque, setOpenRemarque] = useState(false);
-  const [selectedSeance, setSelectedSeance] = useState(null);
-  const [remarque, setRemarque] = useState("");
-  const [note, setNote] = useState(0);
-  const [tabValue, setTabValue] = useState(0);
+  const moniteurId = user?.user?.id || user?.user?.idProprietaire || user?.id;
+  const autoEcoleId = user?.user?.idAutoEcole || user?.user?.autoEcoleId || user?.autoEcoleId;
 
   const {
-    seances,
+    filteredSeances,
     loading,
+    error,
+    searchTerm,
+    setSearchTerm,
+    dateFilter,
+    setDateFilter,
+    tabValue,
+    setTabValue,
+    counts,
+    refresh,
+    planifier,
+    handleAnnuler,
+    handleDesannuler,
     marquerPresenceSeance,
-    ajouterRemarqueSeance,
-    getSeancesAujourdhui,
-    getProchainesSeances,
-  } = useSeancesConduite(user?.moniteurId);
+    ajouterRemarqueSeance
+  } = useSeancesConduite(moniteurId);
 
-  const seancesAujourdhui = getSeancesAujourdhui();
-  const prochainesSeances = getProchainesSeances(10);
+  const {
+    allContrats: contratsPratique,
+    loading: loadingCandidats,
+    setFilterType,
+    setSelectedMoniteurId,
+  } = useContrats(autoEcoleId, {
+    initialFilterType: "pratique",
+    moniteurId: moniteurId,
+  });
 
-  const handleMarquerPresence = async (seanceId, present) => {
-    await marquerPresenceSeance(seanceId, present);
-  };
+  const [openPlanifier, setOpenPlanifier] = useState(false);
+  const [selectedSeanceToEdit, setSelectedSeanceToEdit] = useState(null);
+  
+  // Confirmation Dialog State
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    isDestructive: false
+  });
 
-  const handleAjouterRemarque = async () => {
-    if (selectedSeance) {
-      await ajouterRemarqueSeance(selectedSeance.id, remarque, note);
-      setOpenRemarque(false);
-      setRemarque("");
-      setNote(0);
-      setSelectedSeance(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  useEffect(() => {
+    if (autoEcoleId) {
+      setFilterType("pratique");
+      setSelectedMoniteurId(moniteurId || null);
     }
+  }, [setFilterType, setSelectedMoniteurId, moniteurId, autoEcoleId]);
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  const getSeancesToDisplay = () => {
-    if (tabValue === 0) return seancesAujourdhui;
-    return prochainesSeances;
+  const handleActionWithConfirm = (title, message, onConfirm, isDestructive = false) => {
+    setConfirmDialog({
+      open: true,
+      title,
+      message,
+      onConfirm: async () => {
+        try {
+          await onConfirm();
+          showSnackbar("Action effectuée avec succès");
+        } catch (err) {
+          showSnackbar(err.message || "Une erreur est survenue", "error");
+        }
+        setConfirmDialog(prev => ({ ...prev, open: false }));
+      },
+      isDestructive
+    });
   };
 
-  const seancesToDisplay = getSeancesToDisplay();
+  const onAnnulerClick = (id) => {
+    handleActionWithConfirm(
+      "Annuler la séance",
+      "Êtes-vous sûr de vouloir annuler cette séance ?",
+      () => handleAnnuler(id),
+      true
+    );
+  };
+
+  const onRestoreClick = (id) => {
+    handleActionWithConfirm(
+      "Réactiver la séance",
+      "Voulez-vous réactiver cette séance ?",
+      () => handleDesannuler(id)
+    );
+  };
+
+  const handleModifier = (seance) => {
+    setSelectedSeanceToEdit(seance);
+    setOpenPlanifier(true);
+  };
+
+  const handleSuccess = () => {
+    setOpenPlanifier(false);
+    setSelectedSeanceToEdit(null);
+    refresh(true);
+    showSnackbar(selectedSeanceToEdit ? "Séance modifiée" : "Séance créée");
+  };
+
+  if (loading && filteredSeances.length === 0) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Extract candidates from contracts for the form
+  const candidats = (contratsPratique || []).map(c => ({
+    id: c.candidatId || c.candidat?.id,
+    contratId: c.id,
+    prenom: c.candidatPrenom || c.candidat?.prenom,
+    nom: c.candidatNom || c.candidat?.nom,
+    numeroCIN: c.cin || c.candidatCIN || c.candidat?.numeroCIN
+  })).filter(c => c.id);
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4" component="h1">
-          Planning des séances de conduite
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setOpenForm(true)}
-        >
-          Planifier séance
-        </Button>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Header Section */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
+        <Box>
+          <Typography variant="h4" fontWeight="800" color="text.primary">
+            Planning de Conduite
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Gérez vos leçons de conduite et le suivi des candidats
+          </Typography>
+        </Box>
+        
+        <Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenPlanifier(true)}
+            sx={{ 
+              borderRadius: 2, 
+              px: 3, 
+              textTransform: 'none',
+              boxShadow: '0 4px 14px 0 rgba(156, 39, 176, 0.39)',
+              bgcolor: 'secondary.main',
+              '&:hover': { bgcolor: 'secondary.dark' }
+            }}
+          >
+            Planifier Séance
+          </Button>
+        </Box>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
-          <Tab label={`Aujourd'hui (${seancesAujourdhui.length})`} />
-          <Tab label={`À venir (${prochainesSeances.length})`} />
+      {/* Tabs Section */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(e, v) => setTabValue(v)}
+          textColor="secondary"
+          indicatorColor="secondary"
+          sx={{
+            "& .MuiTab-root": {
+              fontWeight: "bold",
+              textTransform: "none",
+              fontSize: "1rem",
+              minHeight: 64,
+            },
+          }}
+        >
+          <Tab
+            label={
+              <Box display="flex" alignItems="center" gap={1.5}>
+                À venir
+                <Badge badgeContent={counts.upcoming} color="success" sx={{ position: 'static', transform: 'none' }} />
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box display="flex" alignItems="center" gap={1.5}>
+                Passées
+                <Badge badgeContent={counts.past} color="default" sx={{ position: 'static', transform: 'none' }} />
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box display="flex" alignItems="center" gap={1.5}>
+                Annulées
+                <Badge badgeContent={counts.cancelled} color="error" sx={{ position: 'static', transform: 'none' }} />
+              </Box>
+            }
+          />
         </Tabs>
-      </Paper>
+      </Box>
 
-      {loading ? (
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {seancesToDisplay.length === 0 ? (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 4, textAlign: "center" }}>
-                <EventNote
-                  sx={{ fontSize: 60, color: "text.secondary", mb: 2 }}
-                />
-                <Typography color="textSecondary">
-                  Aucune séance à afficher
-                </Typography>
-              </Paper>
-            </Grid>
-          ) : (
-            seancesToDisplay.map((seance) => (
-              <Grid item xs={12} md={6} key={seance.id}>
-                <Card>
-                  <CardContent>
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                    >
-                      <Box>
-                        <Typography variant="h6">
-                          {seance.candidat?.prenom} {seance.candidat?.nom}
-                        </Typography>
-                        <Typography color="textSecondary" variant="body2">
-                          {format(new Date(seance.date), "dd MMMM yyyy", {
-                            locale: fr,
-                          })}{" "}
-                          - {seance.heureDebut}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                          Durée: {seance.dureeMinutes} minutes
-                        </Typography>
-                        <Chip
-                          label={
-                            TYPE_CONDUITE_LABELS[seance.typeConduite]?.label ||
-                            "Inconnu"
-                          }
-                          color={
-                            TYPE_CONDUITE_LABELS[seance.typeConduite]?.color ||
-                            "default"
-                          }
-                          size="small"
-                          sx={{ mt: 1 }}
-                        />
-                      </Box>
-                      <Box>
-                        {!seance.present && !seance.estAnnulee && (
-                          <IconButton
-                            color="success"
-                            onClick={() =>
-                              handleMarquerPresence(seance.id, true)
-                            }
-                            title="Marquer présent"
-                          >
-                            <CheckCircle />
-                          </IconButton>
-                        )}
-                        {seance.present && (
-                          <Chip label="Présent" color="success" size="small" />
-                        )}
-                        <IconButton
-                          color="primary"
-                          onClick={() => {
-                            setSelectedSeance(seance);
-                            setOpenRemarque(true);
-                          }}
-                          title="Ajouter remarque"
-                        >
-                          <Comment />
-                        </IconButton>
-                      </Box>
-                    </Box>
-
-                    {seance.remarquesPedagogiques && (
-                      <Box
-                        sx={{
-                          mt: 2,
-                          p: 1,
-                          bgcolor: "grey.50",
-                          borderRadius: 1,
-                        }}
-                      >
-                        <Typography variant="caption" color="textSecondary">
-                          Remarque: {seance.remarquesPedagogiques}
-                        </Typography>
-                        {seance.noteProgression > 0 && (
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="textSecondary">
-                              Note: {seance.noteProgression}/10
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    )}
-
-                    {seance.estAnnulee && (
-                      <Alert severity="warning" sx={{ mt: 2 }}>
-                        Séance annulée
-                      </Alert>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))
-          )}
-        </Grid>
-      )}
-
-      <SeanceConduiteForm
-        open={openForm}
-        onClose={() => setOpenForm(false)}
-        onSubmit={async (data) => {
-          const { planifier } = useSeancesConduite(user?.moniteurId);
-          await planifier(data);
-        }}
-        moniteurs={[
-          { id: user?.moniteurId, prenom: user?.prenom, nom: user?.nom },
-        ]}
-        candidats={[]} // À remplir depuis une API
-        loading={loading}
+      {/* Filters Section */}
+      <SeanceFilters 
+        searchTerm={searchTerm} 
+        setSearchTerm={setSearchTerm}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
       />
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Main Content View */}
+      <PlanningCalendar
+        seances={filteredSeances}
+        type="conduite"
+        canEdit={true}
+        onRefresh={() => refresh(true)}
+        onMarquerPresence={marquerPresenceSeance}
+        onAjouterRemarque={ajouterRemarqueSeance}
+        onAnnulerSeance={onAnnulerClick}
+        onDesannulerSeance={onRestoreClick}
+        onModifierSeance={handleModifier}
+      />
+
+      {/* Form Dialog */}
+      <SeanceConduiteForm
+        open={openPlanifier}
+        onClose={() => {
+          setOpenPlanifier(false);
+          setSelectedSeanceToEdit(null);
+        }}
+        onSubmit={planifier}
+        moniteurId={moniteurId}
+        candidats={candidats}
+        initialData={selectedSeanceToEdit}
+        loading={loading || loadingCandidats}
+      />
+
+      {/* Confirmation Dialog */}
       <Dialog
-        open={openRemarque}
-        onClose={() => setOpenRemarque(false)}
-        maxWidth="sm"
-        fullWidth
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
       >
-        <DialogTitle>Ajouter une remarque pédagogique</DialogTitle>
+        <DialogTitle fontWeight="bold">{confirmDialog.title}</DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Remarques"
-            value={remarque}
-            onChange={(e) => setRemarque(e.target.value)}
-            sx={{ mt: 2, mb: 2 }}
-          />
-          <Typography component="legend">Note de progression (0-10)</Typography>
-          <Rating
-            value={note}
-            onChange={(e, newValue) => setNote(newValue)}
-            max={10}
-            size="large"
-          />
+          <DialogContentText>{confirmDialog.message}</DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenRemarque(false)}>Annuler</Button>
-          <Button onClick={handleAjouterRemarque} variant="contained">
-            Enregistrer
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))} sx={{ borderRadius: 2 }}>
+            Annuler
+          </Button>
+          <Button 
+            onClick={confirmDialog.onConfirm} 
+            variant="contained" 
+            color={confirmDialog.isDestructive ? "error" : "primary"}
+            sx={{ borderRadius: 2 }}
+            autoFocus
+          >
+            Confirmer
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ borderRadius: 2, minWidth: 200 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

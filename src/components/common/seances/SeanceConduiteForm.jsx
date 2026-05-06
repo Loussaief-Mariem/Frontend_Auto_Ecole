@@ -1,5 +1,5 @@
 // src/components/common/seances/SeanceConduiteForm.jsx
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -11,191 +11,544 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Alert,
   CircularProgress,
+  Stack,
+  IconButton,
+  Box,
   Typography,
+  Paper,
+  Divider,
 } from "@mui/material";
-import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { fr } from "date-fns/locale";
+import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { TypeConduite, TYPE_CONDUITE_LABELS } from "../../../enums";
+import { getSeanceConduiteApiErrorMessage } from "../../../api/seanceConduiteService";
 
 const SeanceConduiteForm = ({
   open,
   onClose,
   onSubmit,
-  moniteurs = [],
-  candidats = [],
+  moniteurId,
+  candidats,
   initialData = null,
   loading = false,
+  multiple = false,
+  messageError = "",
+  onClearMessageError,
 }) => {
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString(),
+  const draftIdRef = useRef(1);
+  const getNextDraftId = () => {
+    const next = draftIdRef.current;
+    draftIdRef.current += 1;
+    return next;
+  };
+  console.log("candidats in form", candidats);
+
+  const buildDefaultSeance = () => ({
+    id: getNextDraftId(),
+    date: new Date(),
     heureDebut: "09:00",
     dureeMinutes: 60,
-    typeConduite: TypeConduite.VILLE,
-    candidatId: "",
-    moniteurId: "",
+    typeConduite: TypeConduite.MANOEUVRE,
+    candidatId: candidats[0]?.id?.toString() || "",
+    contratId: candidats[0]?.contratId || "",
   });
+
+  // Mode simple
+  const [formData, setFormData] = useState({
+    date: new Date(),
+    heureDebut: "09:00",
+    dureeMinutes: 60,
+    typeConduite: TypeConduite.MANOEUVRE,
+    candidatId: "",
+    contratId: "",
+  });
+
+  // Mode multiple
+  const [seances, setSeances] = useState([]);
+
   const [error, setError] = useState("");
 
+  // Initialisation des données pour le mode simple
   useEffect(() => {
-    if (initialData) {
+    if (!multiple && initialData) {
       setFormData({
-        date: initialData.date || new Date().toISOString(),
+        date: initialData.date ? new Date(initialData.date) : new Date(),
         heureDebut: initialData.heureDebut || "09:00",
         dureeMinutes: initialData.dureeMinutes || 60,
-        typeConduite: initialData.typeConduite || TypeConduite.VILLE,
+        typeConduite: initialData.typeConduite || TypeConduite.MANOEUVRE,
         candidatId: initialData.candidatId || "",
-        moniteurId: initialData.moniteurId || "",
+        contratId: initialData.contratId || "",
       });
     }
-  }, [initialData]);
+  }, [initialData, multiple]);
 
-  const handleSubmit = async () => {
-    if (!formData.candidatId || !formData.moniteurId) {
-      setError("Veuillez sélectionner un candidat et un moniteur");
+  // Réinitialisation quand le dialogue s'ouvre
+  useEffect(() => {
+    if (open) {
+      setError("");
+      if (multiple) {
+        setSeances([buildDefaultSeance()]);
+      } else {
+        setFormData({
+          date: new Date(),
+          heureDebut: "09:00",
+          dureeMinutes: 60,
+          typeConduite: TypeConduite.MANOEUVRE,
+          candidatId: candidats[0]?.id?.toString() || "",
+          contratId: candidats[0]?.contratId || "",
+        });
+      }
+    }
+  }, [open, multiple, candidats]);
+
+  // Mettre à jour le contratId quand le candidat change (mode simple)
+  const handleCandidatChange = (selectedCandidatId) => {
+    const selectedCandidat = candidats.find(
+      (c) => c.id.toString() === selectedCandidatId,
+    );
+    setFormData({
+      ...formData,
+      candidatId: selectedCandidatId,
+      contratId: selectedCandidat?.contratId || "",
+    });
+  };
+
+  // Gestion mode simple
+  const handleSimpleSubmit = async () => {
+    // Validation
+    if (!formData.candidatId) {
+      setError("Veuillez sélectionner un candidat");
+      return;
+    }
+
+    if (!formData.contratId) {
+      setError("Contrat non trouvé pour ce candidat");
+      return;
+    }
+
+    if (!formData.date) {
+      setError("Veuillez sélectionner une date");
+      return;
+    }
+
+    if (!formData.heureDebut) {
+      setError("Veuillez saisir une heure de début");
+      return;
+    }
+
+    if (!formData.dureeMinutes || formData.dureeMinutes < 30) {
+      setError("La durée doit être d'au moins 30 minutes");
+      return;
+    }
+    if (!moniteurId) {
+      setError("Moniteur non défini pour planifier la séance");
       return;
     }
 
     setError("");
+    onClearMessageError?.();
+
+    // Format the data to match backend DTO with contratId
+    const submitData = {
+      date: formData.date.toISOString(),
+      heureDebut: formData.heureDebut,
+      dureeMinutes: parseInt(formData.dureeMinutes),
+      typeConduite: parseInt(formData.typeConduite),
+      contratId: parseInt(formData.contratId), // Utiliser contratId au lieu de candidatId
+      moniteurId: parseInt(moniteurId),
+    };
+
+    console.log("Soumission séance (mode simple):", submitData);
+
     try {
-      await onSubmit(formData);
+      const result = await onSubmit(submitData);
+      if (result === false) {
+        return;
+      }
+      // Reset form after successful submission
+      setFormData({
+        date: new Date(),
+        heureDebut: "09:00",
+        dureeMinutes: 60,
+        typeConduite: TypeConduite.MANOEUVRE,
+        candidatId: candidats[0]?.id?.toString() || "",
+        contratId: candidats[0]?.contratId || "",
+      });
       onClose();
     } catch (err) {
-      setError(err.message || "Erreur lors de la planification");
+      console.error(err);
+      setError(getSeanceConduiteApiErrorMessage(err));
     }
   };
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Planifier une séance de conduite</DialogTitle>
-      <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2, mt: 1 }}>
-            {error}
-          </Alert>
-        )}
+  // Gestion mode multiple
+  const addSeance = () => {
+    setSeances([...seances, buildDefaultSeance()]);
+  };
 
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
-              <DateTimePicker
-                label="Date et heure"
-                value={new Date(formData.date)}
+  const removeSeance = (id) => {
+    if (seances.length === 1) {
+      setError("Vous devez avoir au moins une séance");
+      return;
+    }
+    setSeances(seances.filter((s) => s.id !== id));
+  };
+
+  const updateSeance = (id, field, value) => {
+    setSeances(
+      seances.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+    );
+  };
+
+  const validateSeance = (seance) => {
+    if (!seance.candidatId) {
+      return "Veuillez sélectionner un candidat";
+    }
+    if (!seance.contratId) {
+      return "Contrat non trouvé pour ce candidat";
+    }
+    if (!seance.date) {
+      return "Veuillez sélectionner une date";
+    }
+    if (!seance.heureDebut) {
+      return "Veuillez saisir une heure de début";
+    }
+    if (!seance.dureeMinutes || seance.dureeMinutes < 30) {
+      return "La durée doit être d'au moins 30 minutes";
+    }
+    if (!moniteurId) {
+      return "Moniteur non défini pour planifier les séances";
+    }
+    return null;
+  };
+
+  const handleMultipleSubmit = async () => {
+    // Validate all seances
+    for (const seance of seances) {
+      const validationError = validateSeance(seance);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+    }
+
+    setError("");
+    onClearMessageError?.();
+
+    // Format data for batch submission with contratId
+    const submitData = seances.map((seance) => ({
+      date: seance.date.toISOString(),
+      heureDebut: seance.heureDebut,
+      dureeMinutes: parseInt(seance.dureeMinutes),
+      typeConduite: parseInt(seance.typeConduite),
+      contratId: parseInt(seance.contratId), // Utiliser contratId
+      moniteurId: parseInt(moniteurId),
+    }));
+
+    console.log("Soumission batch séances:", submitData);
+
+    try {
+      const result = await onSubmit(submitData);
+      if (result === false) {
+        return;
+      }
+      onClose();
+    } catch (err) {
+      setError(getSeanceConduiteApiErrorMessage(err));
+    }
+  };
+
+  // Mettre à jour le contratId quand le candidat change (mode multiple)
+  const handleMultipleCandidatChange = (newCandidatId) => {
+    const selectedCandidat = candidats.find(
+      (c) => c.id.toString() === newCandidatId,
+    );
+    setSeances(
+      seances.map((s) => ({
+        ...s,
+        candidatId: newCandidatId,
+        contratId: selectedCandidat?.contratId || "",
+      })),
+    );
+  };
+
+  const handleClose = () => {
+    setError("");
+    onClearMessageError?.();
+    onClose();
+  };
+
+  // Rendu du mode simple
+  const renderSimpleMode = () => (
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
+      <Stack spacing={3} sx={{ mt: 1 }}>
+        {/* Date */}
+        <DatePicker
+          label="Date"
+          value={formData.date}
+          onChange={(newValue) => {
+            if (newValue) {
+              setFormData({ ...formData, date: newValue });
+            }
+          }}
+          slotProps={{
+            textField: {
+              fullWidth: true,
+              required: true,
+            },
+          }}
+        />
+
+        {/* Heure de début */}
+        <TextField
+          fullWidth
+          label="Heure de début"
+          type="time"
+          value={formData.heureDebut}
+          onChange={(e) =>
+            setFormData({ ...formData, heureDebut: e.target.value })
+          }
+          required
+          InputLabelProps={{ shrink: true }}
+        />
+
+        {/* Durée */}
+        <TextField
+          fullWidth
+          label="Durée (minutes)"
+          type="number"
+          value={formData.dureeMinutes}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              dureeMinutes: parseInt(e.target.value) || 0,
+            })
+          }
+          required
+          inputProps={{ min: 30, max: 180, step: 15 }}
+        />
+
+        {/* Type de conduite */}
+        <FormControl fullWidth required>
+          <InputLabel>Type de conduite</InputLabel>
+          <Select
+            value={formData.typeConduite}
+            label="Type de conduite"
+            onChange={(e) =>
+              setFormData({ ...formData, typeConduite: e.target.value })
+            }
+          >
+            {Object.entries(TypeConduite)
+              .filter(([key]) => isNaN(parseInt(key)))
+              .map(([key, value]) => (
+                <MenuItem key={value} value={value}>
+                  {TYPE_CONDUITE_LABELS[value]?.label || key}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
+
+        {/* Candidat */}
+        <FormControl fullWidth required>
+          <InputLabel>Candidat</InputLabel>
+          <Select
+            value={formData.candidatId}
+            label="Candidat"
+            onChange={(e) => handleCandidatChange(e.target.value)}
+          >
+            {candidats.map((candidat) => (
+              <MenuItem key={candidat.id} value={candidat.id.toString()}>
+                {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
+                {candidat.contratId && ` (Contrat #${candidat.contratId})`}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+    </LocalizationProvider>
+  );
+
+  // Rendu du mode multiple
+  const renderMultipleMode = () => (
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
+      <Stack spacing={3}>
+        {seances.map((seance, index) => (
+          <Paper
+            key={seance.id}
+            elevation={2}
+            sx={{ p: 2, position: "relative" }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                Séance #{index + 1}
+              </Typography>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => removeSeance(seance.id)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+
+            <Stack spacing={2}>
+              {/* Date */}
+              <DatePicker
+                label="Date"
+                value={seance.date}
                 onChange={(newValue) => {
                   if (newValue) {
-                    setFormData({ ...formData, date: newValue.toISOString() });
+                    updateSeance(seance.id, "date", newValue);
                   }
                 }}
                 slotProps={{
                   textField: {
                     fullWidth: true,
                     required: true,
-                    sx: { mb: 2 },
+                    size: "small",
                   },
                 }}
               />
-            </Grid>
 
-            <Grid item xs={12} md={6}>
+              {/* Heure de début */}
               <TextField
                 fullWidth
                 label="Heure de début"
                 type="time"
-                value={formData.heureDebut}
+                size="small"
+                value={seance.heureDebut}
                 onChange={(e) =>
-                  setFormData({ ...formData, heureDebut: e.target.value })
+                  updateSeance(seance.id, "heureDebut", e.target.value)
                 }
                 required
                 InputLabelProps={{ shrink: true }}
               />
-            </Grid>
 
-            <Grid item xs={12} md={6}>
+              {/* Durée */}
               <TextField
                 fullWidth
                 label="Durée (minutes)"
                 type="number"
-                value={formData.dureeMinutes}
+                size="small"
+                value={seance.dureeMinutes}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    dureeMinutes: parseInt(e.target.value),
-                  })
+                  updateSeance(
+                    seance.id,
+                    "dureeMinutes",
+                    parseInt(e.target.value) || 0,
+                  )
                 }
                 required
                 inputProps={{ min: 30, max: 180, step: 15 }}
               />
-            </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
+              {/* Type de conduite */}
+              <FormControl fullWidth required size="small">
                 <InputLabel>Type de conduite</InputLabel>
                 <Select
-                  value={formData.typeConduite}
+                  value={seance.typeConduite}
                   label="Type de conduite"
                   onChange={(e) =>
-                    setFormData({ ...formData, typeConduite: e.target.value })
+                    updateSeance(seance.id, "typeConduite", e.target.value)
                   }
                 >
-                  {Object.entries(TypeConduite).map(([key, value]) => (
-                    <MenuItem key={value} value={value}>
-                      {TYPE_CONDUITE_LABELS[value]?.label || key}
-                    </MenuItem>
-                  ))}
+                  {Object.entries(TypeConduite)
+                    .filter(([key]) => isNaN(parseInt(key)))
+                    .map(([key, value]) => (
+                      <MenuItem key={value} value={value}>
+                        {TYPE_CONDUITE_LABELS[value]?.label || key}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
-            </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Candidat</InputLabel>
-                <Select
-                  value={formData.candidatId}
-                  label="Candidat"
-                  onChange={(e) =>
-                    setFormData({ ...formData, candidatId: e.target.value })
-                  }
-                >
-                  {candidats.map((candidat) => (
-                    <MenuItem key={candidat.id} value={candidat.id}>
-                      {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+              {/* Candidat - appliqué à toutes les séances */}
+              {seances.length > 0 && index === 0 && (
+                <FormControl fullWidth required size="small">
+                  <InputLabel>Candidat</InputLabel>
+                  <Select
+                    value={seance.candidatId}
+                    label="Candidat"
+                    onChange={(e) =>
+                      handleMultipleCandidatChange(e.target.value)
+                    }
+                  >
+                    {candidats.map((candidat) => (
+                      <MenuItem
+                        key={candidat.id}
+                        value={candidat.id.toString()}
+                      >
+                        {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
+                        {candidat.contratId &&
+                          ` (Contrat #${candidat.contratId})`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            </Stack>
+            {index < seances.length - 1 && <Divider sx={{ mt: 2 }} />}
+          </Paper>
+        ))}
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Moniteur</InputLabel>
-                <Select
-                  value={formData.moniteurId}
-                  label="Moniteur"
-                  onChange={(e) =>
-                    setFormData({ ...formData, moniteurId: e.target.value })
-                  }
-                >
-                  {moniteurs.map((moniteur) => (
-                    <MenuItem key={moniteur.id} value={moniteur.id}>
-                      {moniteur.prenom} {moniteur.nom}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </LocalizationProvider>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={addSeance}
+          fullWidth
+        >
+          Ajouter une séance
+        </Button>
+      </Stack>
+    </LocalizationProvider>
+  );
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        {multiple
+          ? "Planifier plusieurs séances de conduite"
+          : "Planifier une séance de conduite"}
+      </DialogTitle>
+      <DialogContent>
+        {(messageError || error) && (
+          <Stack spacing={1} sx={{ mb: 2, mt: 1 }}>
+            {messageError ? (
+              <Alert severity="error">{messageError}</Alert>
+            ) : null}
+            {error ? <Alert severity="error">{error}</Alert> : null}
+          </Stack>
+        )}
+        {multiple ? renderMultipleMode() : renderSimpleMode()}
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+        <Button onClick={handleClose} disabled={loading}>
           Annuler
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          {loading ? <CircularProgress size={24} /> : "Planifier"}
+        <Button
+          onClick={multiple ? handleMultipleSubmit : handleSimpleSubmit}
+          variant="contained"
+          disabled={loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} />
+          ) : multiple ? (
+            "Planifier toutes les séances"
+          ) : (
+            "Planifier"
+          )}
         </Button>
       </DialogActions>
     </Dialog>

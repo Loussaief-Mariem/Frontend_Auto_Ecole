@@ -31,14 +31,11 @@ import {
   Visibility as ViewIcon,
   FilterList as FilterIcon,
   Download as DownloadIcon,
-  EventNote as EventIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext"; // Ajout de l'import
 import useCandidatsList from "../../../hooks/useCandidatsList";
 import PaginationComponent from "../../../components/common/pagination/PaginationComponent";
-import SeanceConduiteForm from "../../../components/common/seances/SeanceConduiteForm";
-import { planifierSeanceConduite } from "../../../api/seanceConduiteService";
 
 // Mapping des enums
 const ETAT_CANDIDAT = {
@@ -65,14 +62,8 @@ const CandidatsListPage = () => {
   const { user } = useAuth(); // Récupération de l'utilisateur connecté
   const [searchTerm, setSearchTerm] = useState("");
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("CompteActif");
 
-  // États pour le dialogue de planification de séance
-  const [openSeanceForm, setOpenSeanceForm] = useState(false);
-  const [selectedCandidat, setSelectedCandidat] = useState(null);
-  const [planificationLoading, setPlanificationLoading] = useState(false);
-
-  // ID de l'auto-école (à récupérer depuis le contexte ou les props)
   const autoEcoleId = user?.autoEcoleId || 1; // Utilisation de l'autoEcoleId du contexte
   // ID du moniteur (à récupérer depuis le contexte ou les props)
   const moniteurId = user?.moniteurId || 1; // À remplacer par l'ID du moniteur connecté
@@ -116,6 +107,8 @@ const CandidatsListPage = () => {
     if (statusFilter !== "all") {
       if (statusFilter === "Actif") matchesStatus = candidat.etat === 0;
       else if (statusFilter === "Archivé") matchesStatus = candidat.etat === 1;
+      else if (statusFilter === "CompteActif")
+        matchesStatus = candidat.compte?.etat === 0;
       else if (statusFilter === "CompteInactif")
         matchesStatus = candidat.compte?.etat === 1;
     }
@@ -134,34 +127,6 @@ const CandidatsListPage = () => {
     } else {
       // Fallback par défaut
       navigate(`/dashboard/secretaire/candidats/${id}`);
-    }
-  };
-
-  const handlePlanifierSeance = (candidat) => {
-    setSelectedCandidat(candidat);
-    setOpenSeanceForm(true);
-  };
-
-  const handleSubmitSeance = async (data) => {
-    setPlanificationLoading(true);
-    try {
-      // Planifier la séance directement sans vérification
-      await planifierSeanceConduite(data);
-
-      // Afficher un message de succès
-      alert("Séance planifiée avec succès !");
-
-      // Fermer le dialogue
-      setOpenSeanceForm(false);
-      setSelectedCandidat(null);
-    } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          err.message ||
-          "Erreur lors de la planification",
-      );
-    } finally {
-      setPlanificationLoading(false);
     }
   };
 
@@ -243,10 +208,12 @@ const CandidatsListPage = () => {
                 {statusFilter === "all"
                   ? "Tous"
                   : statusFilter === "Actif"
-                    ? "Actifs"
+                    ? "Candidats Actifs"
                     : statusFilter === "Archivé"
-                      ? "Archivés"
-                      : "Compte inactif"}
+                      ? "Candidats Archivés"
+                      : statusFilter === "CompteActif"
+                        ? "Compte Actif"
+                        : "Compte inactif"}
               </Button>
               <Menu
                 anchorEl={filterAnchorEl}
@@ -260,6 +227,14 @@ const CandidatsListPage = () => {
                   }}
                 >
                   Tous
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setStatusFilter("CompteActif");
+                    setFilterAnchorEl(null);
+                  }}
+                >
+                  Compte Actif
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -313,14 +288,13 @@ const CandidatsListPage = () => {
                 <TableCell>Date d'inscription</TableCell>
                 <TableCell>Statut dossier</TableCell>
                 <TableCell>Statut compte</TableCell>
-                <TableCell>Statut candidat</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredCandidats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={7} align="center">
                     <Typography
                       variant="body2"
                       color="text.secondary"
@@ -380,7 +354,6 @@ const CandidatsListPage = () => {
                         }
                       />
                     </TableCell>
-                    <TableCell>{getStatusChip(candidat.etat)}</TableCell>
                     <TableCell align="center">
                       <Tooltip title="Voir profil">
                         <IconButton
@@ -390,14 +363,7 @@ const CandidatsListPage = () => {
                           <ViewIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Planifier séance de conduite">
-                        <IconButton
-                          onClick={() => handlePlanifierSeance(candidat)}
-                          color="success"
-                        >
-                          <EventIcon />
-                        </IconButton>
-                      </Tooltip>
+
                     </TableCell>
                   </TableRow>
                 ))
@@ -419,25 +385,7 @@ const CandidatsListPage = () => {
         />
       </Paper>
 
-      {/* Dialogue pour planifier une séance de conduite */}
-      <SeanceConduiteForm
-        open={openSeanceForm}
-        onClose={() => {
-          setOpenSeanceForm(false);
-          setSelectedCandidat(null);
-        }}
-        onSubmit={handleSubmitSeance}
-        moniteurs={[{ id: moniteurId, prenom: "Moniteur", nom: "Principal" }]} // À remplacer par la liste réelle des moniteurs
-        candidats={selectedCandidat ? [selectedCandidat] : []}
-        initialData={
-          selectedCandidat
-            ? {
-                candidatId: selectedCandidat.id,
-              }
-            : null
-        }
-        loading={planificationLoading}
-      />
+
     </Box>
   );
 };

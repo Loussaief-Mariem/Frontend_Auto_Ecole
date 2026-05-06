@@ -24,10 +24,17 @@ const CompteService = {
     return response.data;
   },
 
-  //  Modifier un compte
+  // In compteService.js - updateCompte method
   updateCompte: async (data) => {
-    const response = await api.put("/Compte", data);
-    return response.data;
+    console.log("Sending PUT request to /Compte with data:", data);
+    try {
+      const response = await api.put("/Compte", data);
+      console.log("Response:", response);
+      return response.data;
+    } catch (error) {
+      console.error("Error response:", error.response);
+      throw error;
+    }
   },
 
   //  Supprimer un compte

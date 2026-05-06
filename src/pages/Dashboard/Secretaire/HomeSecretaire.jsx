@@ -3,6 +3,7 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
+import DashboardUserMeta from "../../../components/common/dashboard/DashboardUserMeta";
 
 const Card = ({ title, value, subtitle, icon }) => (
   <Paper
@@ -43,6 +44,7 @@ const HomeSecretaire = () => {
             <Typography color="text.secondary">
               Suivi des paiements, candidats et séances.
             </Typography>
+            <DashboardUserMeta />
           </Box>
           <Chip icon={<TaskAltOutlinedIcon />} color="primary" label="Opérations à jour" />
         </Stack>

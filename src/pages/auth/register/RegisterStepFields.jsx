@@ -15,7 +15,6 @@ const RegisterStepFields = ({
   form,
   setForm,
   errors,
-  gouvernoratsList,
 }) => {
   const setField = (key) => (e) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -130,7 +129,6 @@ const RegisterStepFields = ({
           form={form}
           setForm={setForm}
           errors={errors}
-          gouvernoratsList={gouvernoratsList}
         />
       );
 

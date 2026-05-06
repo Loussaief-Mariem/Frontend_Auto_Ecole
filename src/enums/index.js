@@ -125,64 +125,84 @@ export const TypePermis = [
     code: "AA",
     description: "Cyclomoteurs, vélomoteurs, voiturettes...",
     ageMin: 16,
+    nombreQuestions: 25,
+    seuilReussite: 20,
   },
   {
     code: "A",
     description: "Toutes motos",
     ageMin: 18,
     permisPrealable: "AA",
+    nombreQuestions: 30,
+    seuilReussite: 24,
   },
   {
     code: "B",
     description: "Voitures (≤ 3500 kg)",
     ageMin: 18,
+    nombreQuestions: 30,
+    seuilReussite: 24,
   },
   {
     code: "BE",
     description: "Voiture + remorque > 750kg",
     ageMin: 20,
     permisPrealable: "B",
+    nombreQuestions: 35,
+    seuilReussite: 28,
   },
   {
     code: "C",
     description: "Poids lourd",
     ageMin: 20,
+    nombreQuestions: 30,
+    seuilReussite: 24,
   },
   {
     code: "CE",
     description: "Poids lourd + remorque",
     ageMin: 20,
     permisPrealable: "C",
+    nombreQuestions: 35,
+    seuilReussite: 28,
   },
   {
     code: "D",
     description: "Transport en commun",
     ageMin: 21,
     permisPrealable: "G",
+    nombreQuestions: 35,
+    seuilReussite: 28,
   },
   {
     code: "DE",
     description: "Bus + remorque",
     ageMin: 21,
     permisPrealable: "D",
+    nombreQuestions: 35,
+    seuilReussite: 28,
   },
   {
     code: "G",
     description: "Taxi / transport rural",
     ageMin: 20,
+    nombreQuestions: 30,
+    seuilReussite: 24,
   },
   {
     code: "H",
     description: "Permis spécial",
     ageMin: 18,
+    nombreQuestions: 30,
+    seuilReussite: 24,
   },
 ];
 
 // Type Examen (corrigé selon backend)
 export const TypeExamen = {
-  CODE: 0,
-  CIRCULATION: 1,
-  MANOEUVRE: 2,
+  Code: 0,
+  Circulation: 1,
+  Manœuvre: 2,
 };
 
 // TypeConduite (corrigé selon backend C#)
@@ -199,42 +219,42 @@ export const TYPE_CONDUITE_LABELS = {
 
 // Theme de Code (corrigé)
 export const ThemeCode = {
-  SIGNALISATION: 0,
-  CONDUCTEUR_VEHICULE: 1,
-  ARRET_STATIONNEMENT: 2,
-  CROISEMENT_DEPASSEMENT: 3,
-  PRIORITE: 4,
-  CIRCULATION: 5,
-  DELITS: 6,
-  PREMIERS_SECOURS: 7,
-  MAINTENANCE_ENERGIE: 8,
-  TRANSPORT_MATIERES_DANGEREUSES: 9,
+  Signalisation: 0,
+  ConducteurVehicule: 1,
+  ArretStationnement: 2,
+  CroisementDepassement: 3,
+  Priorite: 4,
+  Circulation: 5,
+  Delits: 6,
+  PremiersSecours: 7,
+  MaintenanceEnergie: 8,
+  TransportMatieresDangereuses: 9,
 };
 
 // Libellés pour ThemeCode
 export const THEME_CODE_LABELS = {
-  [ThemeCode.SIGNALISATION]: { label: "Signalisation", color: "primary" },
-  [ThemeCode.CONDUCTEUR_VEHICULE]: {
+  [ThemeCode.Signalisation]: { label: "Signalisation", color: "primary" },
+  [ThemeCode.ConducteurVehicule]: {
     label: "Conducteur et véhicule",
     color: "secondary",
   },
-  [ThemeCode.ARRET_STATIONNEMENT]: {
+  [ThemeCode.ArretStationnement]: {
     label: "Arrêt et stationnement",
     color: "info",
   },
-  [ThemeCode.CROISEMENT_DEPASSEMENT]: {
+  [ThemeCode.CroisementDepassement]: {
     label: "Croisement et dépassement",
     color: "warning",
   },
-  [ThemeCode.PRIORITE]: { label: "Priorité", color: "success" },
-  [ThemeCode.CIRCULATION]: { label: "Circulation", color: "error" },
-  [ThemeCode.DELITS]: { label: "Délits", color: "default" },
-  [ThemeCode.PREMIERS_SECOURS]: { label: "Premiers secours", color: "primary" },
-  [ThemeCode.MAINTENANCE_ENERGIE]: {
+  [ThemeCode.Priorite]: { label: "Priorité", color: "success" },
+  [ThemeCode.Circulation]: { label: "Circulation", color: "error" },
+  [ThemeCode.Delits]: { label: "Délits", color: "default" },
+  [ThemeCode.PremiersSecours]: { label: "Premiers secours", color: "primary" },
+  [ThemeCode.MaintenanceEnergie]: {
     label: "Maintenance et énergie",
     color: "secondary",
   },
-  [ThemeCode.TRANSPORT_MATIERES_DANGEREUSES]: {
+  [ThemeCode.TransportMatieresDangereuses]: {
     label: "Transport matières dangereuses",
     color: "error",
   },
@@ -256,9 +276,9 @@ export const STATUT_SEANCE_LABELS = {
 
 // StatutExamen
 export const StatutExamen = {
-  PROGRAMME: 1,
-  SATISFAIT: 2,
-  AJOURNE: 3,
-  REPORTE: 4,
-  ANNULE: 5,
+  Programmé: 1,
+  Satisfait: 2,
+  Ajourne: 3,
+  Reporté: 4,
+  Invalide: 5,
 };

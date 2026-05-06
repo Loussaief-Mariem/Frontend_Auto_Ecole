@@ -20,14 +20,16 @@ import { authPageSx, authPaperSx, authSubmitSx } from "./authStyles";
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
-
+  console.log("ForgotPasswordPage", email);
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    console.log("Email envoyé au backend :", email);
 
     try {
       await forgotPassword(email);
       alert("Email envoyé !");
-      navigate("/reset-password");
+      navigate("/login");
     } catch {
       alert("Erreur lors de l'envoi");
     }

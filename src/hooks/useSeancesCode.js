@@ -1,176 +1,145 @@
-// src/hooks/useSeancesCode.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  getAllSeancesCode,
-  getSeancesCodeBySecretaire,
-  planifierSeanceCode,
-  ajouterParticipants,
-  marquerPresenceCode,
-  updateSeanceCode,
-  deleteSeanceCode,
-  getSeancesCodeByDate,
+  getSeancesByAutoEcole,
+  annulerSeance,
+  desannulerSeance,
 } from "../api/seanceCodeService";
+import {
+  isAfter,
+  isBefore,
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  isSameDay,
+  parseISO,
+} from "date-fns";
 
-export const useSeancesCode = (secretaireId = null) => {
+export const useSeancesCode = (user) => {
   const [seances, setSeances] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
+  const [tabValue, setTabValue] = useState(0); // 0: Upcoming, 1: Past, 2: Cancelled
 
-  // Charger toutes les séances ou celles d'un secrétaire
-  const fetchSeances = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = secretaireId
-        ? await getSeancesCodeBySecretaire(secretaireId)
-        : await getAllSeancesCode();
-      setSeances(data);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Erreur lors du chargement des séances",
-      );
-      console.error("Erreur fetchSeances:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [secretaireId]);
-
-  // Charger les séances par date
-  const fetchSeancesByDate = useCallback(async (date) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getSeancesCodeByDate(date);
-      setSeances(data);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Erreur lors du chargement des séances",
-      );
-      console.error("Erreur fetchSeancesByDate:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Planifier une nouvelle séance
-  const planifier = useCallback(async (data) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const nouvelleSeance = await planifierSeanceCode(data);
-      setSeances((prev) => [...prev, nouvelleSeance]);
-      return nouvelleSeance;
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Erreur lors de la planification",
-      );
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Ajouter des participants
-  const ajouterParticipantsSeance = useCallback(
-    async (seanceId, candidatsIds) => {
-      setLoading(true);
+  const loadSeances = useCallback(
+    async (isRefresh = false) => {
+      if (!isRefresh) setLoading(true);
+      setError(null);
       try {
-        const seance = await ajouterParticipants(seanceId, candidatsIds);
-        setSeances((prev) => prev.map((s) => (s.id === seanceId ? seance : s)));
-        return seance;
+        const autoEcoleId = user?.user?.idAutoEcole || user?.autoEcoleId;
+        if (!autoEcoleId) {
+          setSeances([]);
+          return;
+        }
+        const response = await getSeancesByAutoEcole(autoEcoleId);
+
+        let seancesData = [];
+        if (Array.isArray(response)) seancesData = response;
+        else if (response.data && Array.isArray(response.data))
+          seancesData = response.data;
+        else if (response.data?.data && Array.isArray(response.data.data))
+          seancesData = response.data.data;
+
+        setSeances(seancesData);
       } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            "Erreur lors de l'ajout des participants",
-        );
-        throw err;
+        setError(err.message || "Erreur de chargement");
       } finally {
-        setLoading(false);
+        if (!isRefresh) setLoading(false);
       }
     },
-    [],
-  );
-
-  // Marquer la présence d'un candidat
-  const marquerPresence = useCallback(async (seanceId, candidatId, present) => {
-    setLoading(true);
-    try {
-      const seance = await marquerPresenceCode(seanceId, candidatId, present);
-      setSeances((prev) => prev.map((s) => (s.id === seanceId ? seance : s)));
-      return seance;
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Erreur lors du marquage de présence",
-      );
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Mettre à jour une séance
-  const mettreAJour = useCallback(async (seanceId, data) => {
-    setLoading(true);
-    try {
-      const seance = await updateSeanceCode(seanceId, data);
-      setSeances((prev) => prev.map((s) => (s.id === seanceId ? seance : s)));
-      return seance;
-    } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de la mise à jour");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Supprimer une séance
-  const supprimer = useCallback(async (seanceId) => {
-    setLoading(true);
-    try {
-      await deleteSeanceCode(seanceId);
-      setSeances((prev) => prev.filter((s) => s.id !== seanceId));
-    } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de la suppression");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Obtenir les séances du jour
-  const getSeancesAujourdhui = useCallback(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return seances.filter((s) => s.date?.split("T")[0] === today);
-  }, [seances]);
-
-  // Obtenir les prochaines séances
-  const getProchainesSeances = useCallback(
-    (nombre = 5) => {
-      const maintenant = new Date();
-      return seances
-        .filter((s) => new Date(s.date) > maintenant)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .slice(0, nombre);
-    },
-    [seances],
+    [user],
   );
 
   useEffect(() => {
-    fetchSeances();
-  }, [fetchSeances]);
+    loadSeances();
+  }, [loadSeances]);
+
+  const filteredSeances = useMemo(() => {
+    const now = startOfDay(new Date());
+
+    return seances.filter((seance) => {
+      const seanceDate = parseISO(seance.date);
+      const isCancelled = seance.estAnnulee;
+      const isPast = isBefore(seanceDate, now) && !isSameDay(seanceDate, now);
+      const isUpcoming = isAfter(seanceDate, now) || isSameDay(seanceDate, now);
+
+      // Category filter (Tabs)
+      if (tabValue === 0 && (isCancelled || isPast)) return false; // Upcoming
+      if (tabValue === 1 && (isCancelled || isUpcoming)) return false; // Past
+      if (tabValue === 2 && !isCancelled) return false; // Cancelled
+
+      // Search filter (Theme)
+      if (
+        searchTerm &&
+        !seance.theme?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+        return false;
+
+      // Date Range filter
+      if (dateFilter === "today" && !isSameDay(seanceDate, now)) return false;
+      if (
+        dateFilter === "week" &&
+        (!isAfter(seanceDate, startOfWeek(now)) ||
+          !isBefore(seanceDate, endOfWeek(now)))
+      )
+        return false;
+      if (
+        dateFilter === "month" &&
+        (!isAfter(seanceDate, startOfMonth(now)) ||
+          !isBefore(seanceDate, endOfMonth(now)))
+      )
+        return false;
+
+      return true;
+    });
+  }, [seances, tabValue, searchTerm, dateFilter]);
+
+  const counts = useMemo(() => {
+    const now = startOfDay(new Date());
+    return {
+      upcoming: seances.filter(
+        (s) =>
+          !s.estAnnulee &&
+          (isAfter(parseISO(s.date), now) || isSameDay(parseISO(s.date), now)),
+      ).length,
+      past: seances.filter(
+        (s) =>
+          !s.estAnnulee &&
+          isBefore(parseISO(s.date), now) &&
+          !isSameDay(parseISO(s.date), now),
+      ).length,
+      cancelled: seances.filter((s) => s.estAnnulee).length,
+    };
+  }, [seances]);
+
+  const handleAnnuler = async (id) => {
+    await annulerSeance(id);
+    await loadSeances(true);
+  };
+
+  const handleDesannuler = async (id) => {
+    await desannulerSeance(id);
+    await loadSeances(true);
+  };
 
   return {
     seances,
+    filteredSeances,
     loading,
     error,
-    planifier,
-    ajouterParticipantsSeance,
-    marquerPresence,
-    mettreAJour,
-    supprimer,
-    fetchSeances,
-    fetchSeancesByDate,
-    getSeancesAujourdhui,
-    getProchainesSeances,
+    searchTerm,
+    setSearchTerm,
+    dateFilter,
+    setDateFilter,
+    tabValue,
+    setTabValue,
+    counts,
+    refresh: loadSeances,
+    handleAnnuler,
+    handleDesannuler,
   };
 };

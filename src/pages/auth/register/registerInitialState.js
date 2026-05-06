@@ -14,8 +14,6 @@ export const initialRegisterForm = {
   Adresse: {
     Rue: "",
     Ville: "",
-    Gouvernorat: "",
-    Pays: "",
   },
 };
 
@@ -24,8 +22,8 @@ export const REGISTER_STEPS = [
   "Propriétaire",
   "Établissement",
   "Contact",
-  "Adresse",
   "Permis",
+   "Adresse"
 ];
 
 /** Nombre d’étapes (utile pour validations ou boucles). */

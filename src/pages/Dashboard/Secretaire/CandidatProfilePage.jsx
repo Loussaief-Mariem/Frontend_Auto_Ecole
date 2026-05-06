@@ -1,3 +1,4 @@
+// src/pages/Dashboard/CandidatProfilePage.jsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -25,7 +26,11 @@ import {
   alpha,
   CircularProgress,
   Alert,
-  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -48,12 +53,20 @@ import {
   Smartphone as SmartphoneIcon,
   MarkEmailRead as MarkEmailReadIcon,
   CreditCard as CreditCardIcon,
+  Cancel as CancelIcon,
+  Restore as RestoreIcon,
+  Assignment as ExamenIcon,
+  Add as AddIcon,
 } from "@mui/icons-material";
 import useCandidatProfile from "../../../hooks/useCandidatProfile";
+import usePaiement from "../../../hooks/usePaiement";
+import { useSeancesCode } from "../../../hooks/useSeancesCode";
 import EditCandidatDialog from "../../../components/common/Candidat/EditCandidatDialog";
 import CandidatPdfActions from "../../../components/common/Candidat/CandidatPdfActions";
+import PaiementSection from "../../../components/common/paiement/PaiementSection";
 import api from "../../../api/axios";
 import candidatPlaceholder from "../../../assets/candidat.jpg";
+import { useAuth } from "../../../context/AuthContext";
 import {
   TypeDocument,
   StatutDocument,
@@ -62,6 +75,11 @@ import {
   getEtatCompteDisplay,
   Sexe,
 } from "../../../enums";
+import ExamenForm from "../../../components/common/examens/ExamenForm";
+import ResultatExamenForm from "../../../components/common/examens/ResultatExamenForm";
+import ReportExamenForm from "../../../components/common/examens/ReportExamenForm";
+import ExamensTable from "../../../components/common/examens/ExamensTable";
+import useExamens from "../../../hooks/useExamens";
 
 const LABEL_TYPE_DOCUMENT = {
   [TypeDocument.PhotoIdentite]: "Photo d'identité",
@@ -121,9 +139,7 @@ function getApiOrigin() {
 /** URL absolue pour la photo candidat, ou image locale par défaut si vide. */
 function resolveCandidatPhotoSrc(photoPath, placeholder) {
   const raw =
-    photoPath == null || photoPath === ""
-      ? ""
-      : String(photoPath).trim();
+    photoPath == null || photoPath === "" ? "" : String(photoPath).trim();
   if (!raw) return placeholder;
   if (/^https?:\/\//i.test(raw)) return raw;
   const origin = getApiOrigin();
@@ -132,63 +148,121 @@ function resolveCandidatPhotoSrc(photoPath, placeholder) {
   return `${origin}${path}`;
 }
 
-/** Données de démonstration pour l’onglet séances / paiements (non fournies par l’API profil). */
-const SEANCES_STATIQUES_INIT = [
-  {
-    id: 1,
-    dateSeance: "2024-01-15T10:00:00",
-    nombreHeures: 2,
-    montant: 120,
-    resteAPayer: 0,
-    statut: "Payée",
-    moniteur: { nom: "Gharbi", prenom: "Mohamed" },
-  },
-  {
-    id: 2,
-    dateSeance: "2024-01-20T14:00:00",
-    nombreHeures: 2,
-    montant: 120,
-    resteAPayer: 0,
-    statut: "Payée",
-    moniteur: { nom: "Gharbi", prenom: "Mohamed" },
-  },
-  {
-    id: 3,
-    dateSeance: "2024-01-25T09:00:00",
-    nombreHeures: 2,
-    montant: 120,
-    resteAPayer: 60,
-    statut: "Partielle",
-    moniteur: { nom: "Mansour", prenom: "Ali" },
-  },
-  {
-    id: 4,
-    dateSeance: "2024-02-01T11:00:00",
-    nombreHeures: 2,
-    montant: 120,
-    resteAPayer: 120,
-    statut: "Non payée",
-    moniteur: { nom: "Mansour", prenom: "Ali" },
-  },
-];
-
 const CandidatProfilePage = () => {
   const theme = useTheme();
   const { id } = useParams();
+  const { user } = useAuth();
+
+  // Données du candidat
   const {
     profile,
-    loading,
-    error,
+    loading: profileLoading,
+    error: profileError,
     contratActif,
     adresse,
     compte,
     dossierCandidat,
     documents,
+    seancesCode,
     updateCandidat,
     uploadPhoto,
-  } = useCandidatProfile(id);
+    refreshData,
+  } = useCandidatProfile(id, user?.autoEcoleId);
+
+  // Données financières via usePaiement
+  const {
+    situation: situationFinanciere,
+    loading: paiementLoading,
+    refresh: refreshPaiements,
+  } = usePaiement(contratActif?.id);
+  //console.log("profile.contrat:", profile.contrat);
+  // Hook pour la gestion des séances de code
+  const {
+    marquerPresence: marquerPresenceAPI,
+    mettreAJour: mettreAJourAPI,
+    annulerSeance: annulerSeanceAPI,
+    desannulerSeance: desannulerSeanceAPI,
+    loading: seancesLoading,
+  } = useSeancesCode();
+
+  // Hook pour la gestion des examens
+  const {
+    examensAVenir,
+    historiqueExamens,
+    loading: examensLoading,
+    programmerExamen,
+    enregistrerResultat,
+    reporterExamen,
+    telechargerConvocation,
+    refresh: refreshExamens,
+  } = useExamens(profile?.contrat?.id);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [photoLoadError, setPhotoLoadError] = useState(false);
+
+  // États pour la gestion des séances
+  const [editingSeanceId, setEditingSeanceId] = useState(null);
+  const [editedSeance, setEditedSeance] = useState({});
+  const [seancesData, setSeancesData] = useState([]);
+  const [updatingPresence, setUpdatingPresence] = useState({});
+  const [cancellingSeance, setCancellingSeance] = useState({});
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedSeanceForCancel, setSelectedSeanceForCancel] = useState(null);
+
+  // États pour les dialogues des examens
+  const [examenFormOpen, setExamenFormOpen] = useState(false);
+  const [selectedExamenType, setSelectedExamenType] = useState("Code");
+  const [resultatFormOpen, setResultatFormOpen] = useState(false);
+  const [selectedExamen, setSelectedExamen] = useState(null);
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+
+  // Récupérer le rôle de l'utilisateur connecté
+  const userRole = localStorage.getItem("userRole") || "secretaire";
+
+  useEffect(() => {
+    setPhotoLoadError(false);
+  }, [id]);
+
+  // Transformer les données des séances de l'API
+  useEffect(() => {
+    if (seancesCode && seancesCode.length > 0) {
+      const formattedSeances = seancesCode.map((seance) => {
+        const currentParticipant = seance.participants?.find(
+          (p) => p.candidatId === parseInt(id),
+        );
+
+        const prixParHeure = 40;
+        const dureeHeures = seance.dureeMinutes / 60;
+        const montant = dureeHeures * prixParHeure;
+        const resteAPayer = currentParticipant?.present ? 0 : montant;
+
+        return {
+          id: seance.id,
+          dateSeance: seance.date,
+          heureDebut: seance.heureDebut,
+          dureeMinutes: seance.dureeMinutes,
+          theme: seance.theme,
+          nombreHeures: dureeHeures,
+          montant: montant,
+          resteAPayer: resteAPayer,
+          statut: currentParticipant?.present
+            ? "Effectuée"
+            : resteAPayer > 0
+              ? "À payer"
+              : "Payée",
+          estAnnulee: seance.estAnnulee,
+          present: currentParticipant?.present || false,
+          secretaireId: seance.secretaireId,
+          secretaireNom: seance.secretaireNom,
+          capaciteMax: seance.capaciteMax,
+        };
+      });
+      setSeancesData(formattedSeances);
+    } else {
+      setSeancesData([]);
+    }
+  }, [seancesCode, id]);
 
   const candidatForEdit = useMemo(() => {
     if (!profile) return null;
@@ -200,7 +274,6 @@ const CandidatProfilePage = () => {
         c?.typeFormation !== undefined && c?.typeFormation !== null
           ? c.typeFormation
           : profile.typeFormation,
-      centreExamen: c?.centreExamen ?? profile.centreExamen ?? "",
     };
   }, [profile, contratActif]);
 
@@ -211,15 +284,168 @@ const CandidatProfilePage = () => {
     [updateCandidat],
   );
 
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [editingSeanceId, setEditingSeanceId] = useState(null);
-  const [editedSeance, setEditedSeance] = useState({});
-  const [seances, setSeances] = useState(SEANCES_STATIQUES_INIT);
-  const [photoLoadError, setPhotoLoadError] = useState(false);
+  // Gestionnaires pour les examens
+  const handleProgrammerExamen = async (data) => {
+    await programmerExamen(data);
+  };
 
-  useEffect(() => {
-    setPhotoLoadError(false);
-  }, [id]);
+  const handleEnregistrerResultat = async (data) => {
+    await enregistrerResultat(data);
+  };
+
+  const handleReporterExamen = async (data) => {
+    console.log("Données pour reporter examen depuis le composant:", data);
+    await reporterExamen(data);
+  };
+
+  const handleOpenResultatForm = (examen) => {
+    setSelectedExamen(examen);
+    setResultatFormOpen(true);
+  };
+
+  const handleOpenReportForm = (examen) => {
+    setSelectedExamen(examen);
+    setReportFormOpen(true);
+  };
+
+  // Fonction pour marquer la présence avec le hook
+  const handleTogglePresence = async (seanceId, currentPresent) => {
+    try {
+      setUpdatingPresence((prev) => ({ ...prev, [seanceId]: true }));
+
+      await marquerPresenceAPI(seanceId, user.user.id, !currentPresent);
+
+      setSeancesData((prev) =>
+        prev.map((s) =>
+          s.id === seanceId
+            ? {
+                ...s,
+                present: !currentPresent,
+                resteAPayer: !currentPresent ? 0 : s.montant,
+                statut: !currentPresent ? "Effectuée" : "À payer",
+              }
+            : s,
+        ),
+      );
+
+      refreshPaiements();
+    } catch (err) {
+      console.error("Erreur lors du marquage de présence:", err);
+      alert(
+        err.response?.data?.message || "Erreur lors du marquage de présence",
+      );
+    } finally {
+      setUpdatingPresence((prev) => ({ ...prev, [seanceId]: false }));
+    }
+  };
+
+  // Fonction pour modifier une séance avec le hook
+  const handleEditSeance = (seance) => {
+    setEditingSeanceId(seance.id);
+    setEditedSeance({ ...seance });
+  };
+
+  const handleSaveSeance = async () => {
+    try {
+      const seanceToUpdate = {
+        id: editedSeance.id,
+        date: editedSeance.dateSeance,
+        heureDebut: editedSeance.heureDebut,
+        dureeMinutes: editedSeance.nombreHeures * 60,
+        theme: editedSeance.theme,
+        capaciteMax: editedSeance.capaciteMax,
+      };
+
+      const updatedSeance = await mettreAJourAPI(seanceToUpdate);
+
+      setSeancesData((prev) =>
+        prev.map((s) => {
+          if (s.id === editedSeance.id) {
+            const dureeHeures = updatedSeance.dureeMinutes / 60;
+            return {
+              ...s,
+              dateSeance: updatedSeance.date,
+              heureDebut: updatedSeance.heureDebut,
+              dureeMinutes: updatedSeance.dureeMinutes,
+              theme: updatedSeance.theme,
+              nombreHeures: dureeHeures,
+              montant: dureeHeures * 40,
+              capaciteMax: updatedSeance.capaciteMax,
+            };
+          }
+          return s;
+        }),
+      );
+
+      setEditingSeanceId(null);
+    } catch (err) {
+      console.error("Erreur lors de la modification:", err);
+      alert(
+        err.response?.data?.message ||
+          "Erreur lors de la modification de la séance",
+      );
+    }
+  };
+
+  // Fonction pour annuler une séance avec le hook
+  const handleCancelSeance = (seance) => {
+    setSelectedSeanceForCancel(seance);
+    setCancelDialogOpen(true);
+  };
+
+  const confirmCancelSeance = async () => {
+    if (!selectedSeanceForCancel) return;
+
+    try {
+      setCancellingSeance((prev) => ({
+        ...prev,
+        [selectedSeanceForCancel.id]: true,
+      }));
+
+      await annulerSeanceAPI(selectedSeanceForCancel.id);
+
+      setSeancesData((prev) =>
+        prev.map((s) =>
+          s.id === selectedSeanceForCancel.id ? { ...s, estAnnulee: true } : s,
+        ),
+      );
+
+      setCancelDialogOpen(false);
+      setSelectedSeanceForCancel(null);
+    } catch (err) {
+      console.error("Erreur lors de l'annulation:", err);
+      alert(
+        err.response?.data?.message ||
+          "Erreur lors de l'annulation de la séance",
+      );
+    } finally {
+      setCancellingSeance((prev) => ({
+        ...prev,
+        [selectedSeanceForCancel.id]: false,
+      }));
+    }
+  };
+
+  // Fonction pour désannuler une séance avec le hook
+  const handleRestoreSeance = async (seanceId) => {
+    try {
+      setCancellingSeance((prev) => ({ ...prev, [seanceId]: true }));
+
+      await desannulerSeanceAPI(seanceId);
+
+      setSeancesData((prev) =>
+        prev.map((s) => (s.id === seanceId ? { ...s, estAnnulee: false } : s)),
+      );
+    } catch (err) {
+      console.error("Erreur lors de la restauration:", err);
+      alert(
+        err.response?.data?.message ||
+          "Erreur lors de la restauration de la séance",
+      );
+    } finally {
+      setCancellingSeance((prev) => ({ ...prev, [seanceId]: false }));
+    }
+  };
 
   const TabPanel = ({ children, value, index }) => (
     <div hidden={value !== index}>
@@ -227,28 +453,14 @@ const CandidatProfilePage = () => {
     </div>
   );
 
-  const handleEditSeance = (seance) => {
-    setEditingSeanceId(seance.id);
-    setEditedSeance(seance);
-  };
-
-  const handleSaveSeance = () => {
-    setSeances((prev) =>
-      prev.map((s) => (s.id === editedSeance.id ? { ...editedSeance } : s)),
-    );
-    setEditingSeanceId(null);
-  };
-
-  const totalMontant = seances.reduce((sum, s) => sum + s.montant, 0);
-  const totalPaye = seances.reduce(
-    (sum, s) => sum + (s.montant - s.resteAPayer),
-    0,
-  );
-  const totalReste = seances.reduce((sum, s) => sum + s.resteAPayer, 0);
+  // Utilisation des données de l'API pour les totaux financiers
+  const totalMontant = situationFinanciere?.total ?? 0;
+  const totalReste = situationFinanciere?.reste ?? 0;
+  const totalHeures = seancesData.reduce((sum, s) => sum + s.nombreHeures, 0);
 
   const etatDossierLabel =
     dossierCandidat != null
-      ? LABEL_ETAT_DOSSIER[dossierCandidat.etatDossier] ?? "—"
+      ? (LABEL_ETAT_DOSSIER[dossierCandidat.etatDossier] ?? "—")
       : "—";
 
   const etatCompteDisplay = getEtatCompteDisplay(compte);
@@ -266,11 +478,13 @@ const CandidatProfilePage = () => {
 
   const formationLabel =
     contratActif != null
-      ? LABEL_TYPE_FORMATION[contratActif.typeFormation] ??
-        `Type ${contratActif.typeFormation}`
+      ? (LABEL_TYPE_FORMATION[contratActif.typeFormation] ??
+        `Type ${contratActif.typeFormation}`)
       : "—";
 
-  /** Carte de section — style neutre et homogène (dashboard pro) */
+  const loading = profileLoading || paiementLoading || seancesLoading;
+
+  /** Carte de section */
   const InfoCard = ({ icon: Icon, title, items }) => (
     <Card
       elevation={0}
@@ -291,7 +505,10 @@ const CandidatProfilePage = () => {
           alignItems: "center",
           gap: 2,
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          bgcolor: alpha(theme.palette.grey[50], theme.palette.mode === "dark" ? 0.15 : 1),
+          bgcolor: alpha(
+            theme.palette.grey[50],
+            theme.palette.mode === "dark" ? 0.15 : 1,
+          ),
         }}
       >
         <Box
@@ -383,6 +600,246 @@ const CandidatProfilePage = () => {
     </Card>
   );
 
+  // Composant pour l'onglet des séances
+  const SeancesTabPanel = () => (
+    <Box sx={{ p: 3 }}>
+      {seancesData.length === 0 ? (
+        <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+          Aucune séance de code planifiée pour ce candidat.
+        </Typography>
+      ) : (
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{ borderRadius: 2, overflowX: "auto" }}
+        >
+          <Table>
+            <TableHead sx={{ bgcolor: "#f5f5f5" }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Horaire</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Durée</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Thème</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Montant</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Statut</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Présence</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {seancesData.map((seance) => (
+                <TableRow
+                  key={seance.id}
+                  hover
+                  sx={{
+                    bgcolor: seance.estAnnulee
+                      ? alpha(theme.palette.error.main, 0.05)
+                      : "inherit",
+                    opacity: seance.estAnnulee ? 0.7 : 1,
+                  }}
+                >
+                  <TableCell>
+                    {editingSeanceId === seance.id ? (
+                      <TextField
+                        type="date"
+                        value={editedSeance.dateSeance?.split("T")[0] || ""}
+                        onChange={(e) =>
+                          setEditedSeance({
+                            ...editedSeance,
+                            dateSeance: e.target.value,
+                          })
+                        }
+                        size="small"
+                      />
+                    ) : (
+                      formatDateCalendar(seance.dateSeance)
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingSeanceId === seance.id ? (
+                      <TextField
+                        type="time"
+                        value={editedSeance.heureDebut || "09:00"}
+                        onChange={(e) =>
+                          setEditedSeance({
+                            ...editedSeance,
+                            heureDebut: e.target.value,
+                          })
+                        }
+                        size="small"
+                      />
+                    ) : (
+                      seance.heureDebut?.substring(0, 5) || "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingSeanceId === seance.id ? (
+                      <TextField
+                        type="number"
+                        value={editedSeance.nombreHeures}
+                        onChange={(e) =>
+                          setEditedSeance({
+                            ...editedSeance,
+                            nombreHeures: parseFloat(e.target.value),
+                            dureeMinutes: parseFloat(e.target.value) * 60,
+                            montant: parseFloat(e.target.value) * 40,
+                          })
+                        }
+                        size="small"
+                        sx={{ width: 80 }}
+                        inputProps={{ step: 0.5 }}
+                      />
+                    ) : (
+                      <Chip
+                        label={`${seance.nombreHeures}h`}
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingSeanceId === seance.id ? (
+                      <TextField
+                        value={editedSeance.theme}
+                        onChange={(e) =>
+                          setEditedSeance({
+                            ...editedSeance,
+                            theme: e.target.value,
+                          })
+                        }
+                        size="small"
+                      />
+                    ) : (
+                      seance.theme || "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="bold">
+                      {seance.montant} DT
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {seance.estAnnulee ? (
+                      <Chip size="small" color="error" label="Annulée" />
+                    ) : (
+                      <Chip
+                        size="small"
+                        color={seance.present ? "success" : "warning"}
+                        label={seance.present ? "Effectuée" : "À venir"}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {!seance.estAnnulee && !seance.present && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        onClick={() =>
+                          handleTogglePresence(seance.id, seance.present)
+                        }
+                        disabled={updatingPresence[seance.id]}
+                        startIcon={
+                          updatingPresence[seance.id] ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <CheckCircleIcon />
+                          )
+                        }
+                      >
+                        Marquer présence
+                      </Button>
+                    )}
+                    {seance.present && (
+                      <Chip
+                        size="small"
+                        color="success"
+                        icon={<CheckCircleIcon />}
+                        label="Présent"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      justifyContent="center"
+                    >
+                      {editingSeanceId === seance.id ? (
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={handleSaveSeance}
+                            color="primary"
+                          >
+                            <SaveIcon />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditingSeanceId(null)}
+                            color="error"
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </>
+                      ) : (
+                        <>
+                          {(userRole === "secretaire" ||
+                            userRole === "moniteur" ||
+                            userRole === "admin") && (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditSeance(seance)}
+                              disabled={seance.estAnnulee}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          )}
+
+                          {(userRole === "secretaire" ||
+                            userRole === "admin") &&
+                            (!seance.estAnnulee ? (
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCancelSeance(seance)}
+                                color="error"
+                                disabled={cancellingSeance[seance.id]}
+                              >
+                                {cancellingSeance[seance.id] ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <CancelIcon />
+                                )}
+                              </IconButton>
+                            ) : (
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRestoreSeance(seance.id)}
+                                color="success"
+                                disabled={cancellingSeance[seance.id]}
+                              >
+                                {cancellingSeance[seance.id] ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <RestoreIcon />
+                                )}
+                              </IconButton>
+                            ))}
+                        </>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
+  );
+
   if (loading) {
     return (
       <Box
@@ -398,11 +855,11 @@ const CandidatProfilePage = () => {
     );
   }
 
-  if (error || !profile) {
+  if (profileError || !profile) {
     return (
       <Box sx={{ p: 3, maxWidth: 1400, margin: "auto" }}>
         <Alert severity="error">
-          {error || "Impossible d’afficher ce candidat."}
+          {profileError || "Impossible d'afficher ce candidat."}
         </Alert>
       </Box>
     );
@@ -478,7 +935,10 @@ const CandidatProfilePage = () => {
           <Grid item>
             <Avatar
               src={avatarPhotoSrc}
-              alt={`${profile.prenom ?? ""} ${profile.nom ?? ""}`.trim() || "Candidat"}
+              alt={
+                `${profile.prenom ?? ""} ${profile.nom ?? ""}`.trim() ||
+                "Candidat"
+              }
               onError={() => {
                 if (photoPathRaw) setPhotoLoadError(true);
               }}
@@ -577,6 +1037,7 @@ const CandidatProfilePage = () => {
         </Grid>
       </Paper>
 
+      {/* Cartes de statistiques utilisant les données de l'API */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
@@ -597,7 +1058,7 @@ const CandidatProfilePage = () => {
                     Total séances
                   </Typography>
                   <Typography variant="h3" fontWeight="bold" color="primary">
-                    {seances.length}
+                    {seancesData.length}
                   </Typography>
                 </Box>
                 <Box
@@ -632,7 +1093,7 @@ const CandidatProfilePage = () => {
                     Heures effectuées
                   </Typography>
                   <Typography variant="h3" fontWeight="bold" color="info.main">
-                    {seances.reduce((sum, s) => sum + s.nombreHeures, 0)}h
+                    {totalHeures}h
                   </Typography>
                 </Box>
                 <Box
@@ -664,26 +1125,24 @@ const CandidatProfilePage = () => {
                     color="text.secondary"
                     fontWeight={500}
                   >
-                    Total payé
+                    Total à payer
                   </Typography>
                   <Typography
                     variant="h3"
                     fontWeight="bold"
-                    color="success.main"
+                    color="warning.main"
                   >
-                    {totalPaye} DT
+                    {totalMontant} DT
                   </Typography>
                 </Box>
                 <Box
                   sx={{
-                    bgcolor: alpha(theme.palette.success.main, 0.1),
+                    bgcolor: alpha(theme.palette.warning.main, 0.1),
                     p: 1.5,
                     borderRadius: 2,
                   }}
                 >
-                  <CheckCircleIcon
-                    sx={{ fontSize: 32, color: "success.main" }}
-                  />
+                  <ReceiptIcon sx={{ fontSize: 32, color: "warning.main" }} />
                 </Box>
               </Stack>
             </CardContent>
@@ -710,14 +1169,14 @@ const CandidatProfilePage = () => {
                   <Typography
                     variant="h3"
                     fontWeight="bold"
-                    color={totalReste > 0 ? "warning.main" : "success.main"}
+                    color={totalReste > 0 ? "error.main" : "success.main"}
                   >
                     {totalReste} DT
                   </Typography>
                 </Box>
                 <Box
                   sx={{
-                    bgcolor: alpha(totalReste > 0 ? "#ff9800" : "#4caf50", 0.1),
+                    bgcolor: alpha(totalReste > 0 ? "#f44336" : "#4caf50", 0.1),
                     p: 1.5,
                     borderRadius: 2,
                   }}
@@ -725,7 +1184,7 @@ const CandidatProfilePage = () => {
                   <PendingIcon
                     sx={{
                       fontSize: 32,
-                      color: totalReste > 0 ? "#ff9800" : "#4caf50",
+                      color: totalReste > 0 ? "#f44336" : "#4caf50",
                     }}
                   />
                 </Box>
@@ -770,19 +1229,27 @@ const CandidatProfilePage = () => {
           />
           <Tab icon={<DocumentIcon />} iconPosition="start" label="Documents" />
           <Tab icon={<ReceiptIcon />} iconPosition="start" label="Paiements" />
+          <Tab icon={<ExamenIcon />} iconPosition="start" label="Examens" />
         </Tabs>
 
         <TabPanel value={selectedTab} index={0}>
           <Box
             sx={{
               p: { xs: 2, sm: 3 },
-              bgcolor: alpha(theme.palette.grey[50], theme.palette.mode === "dark" ? 0.2 : 0.65),
+              bgcolor: alpha(
+                theme.palette.grey[50],
+                theme.palette.mode === "dark" ? 0.2 : 0.65,
+              ),
               minHeight: 360,
             }}
           >
             <Grid container spacing={2.5}>
               <Grid item xs={12} md={6}>
-                <InfoCard icon={PersonIcon} title="Identité" items={identiteItems} />
+                <InfoCard
+                  icon={PersonIcon}
+                  title="Identité"
+                  items={identiteItems}
+                />
               </Grid>
 
               <Grid item xs={12} md={6}>
@@ -811,7 +1278,7 @@ const CandidatProfilePage = () => {
                   items={[
                     {
                       label: "Téléphone",
-                      value: cpt.telephone ?? "—",
+                      value: profile.telephone ?? "—",
                       icon: SmartphoneIcon,
                     },
                     {
@@ -829,20 +1296,13 @@ const CandidatProfilePage = () => {
                   title="Adresse"
                   items={[
                     {
-                      label: "Rue",
-                      value: addr.rue ?? "—",
+                      label: "Adresse complète",
+                      value:
+                        typeof adresse === "string"
+                          ? adresse
+                          : (adresse?.rue ?? profile?.adresse ?? "—"),
                       icon: LocationIcon,
                     },
-                    {
-                      label: "Ville",
-                      value: addr.ville ?? "—",
-                      icon: BusinessIcon,
-                    },
-                    {
-                      label: "Gouvernorat",
-                      value: addr.gouvernorat ?? "—",
-                    },
-                    { label: "Pays", value: addr.pays ?? "—" },
                   ]}
                 />
               </Grid>
@@ -910,14 +1370,6 @@ const CandidatProfilePage = () => {
                           value: formationLabel,
                           valueVariant: "body1",
                         },
-                        {
-                          IconCmp: LocationIcon,
-                          label: "Centre d'examen",
-                          value: contratActif?.centreExamen?.trim()
-                            ? contratActif.centreExamen
-                            : "—",
-                          valueVariant: "body1",
-                        },
                       ].map(({ IconCmp, label, value, valueVariant }) => (
                         <Grid item xs={12} md={4} key={label}>
                           <Box
@@ -930,7 +1382,8 @@ const CandidatProfilePage = () => {
                                 theme.palette.background.default,
                                 0.5,
                               ),
-                              transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                              transition:
+                                "border-color 0.15s ease, box-shadow 0.15s ease",
                               "&:hover": {
                                 borderColor: alpha(
                                   theme.palette.primary.main,
@@ -940,7 +1393,11 @@ const CandidatProfilePage = () => {
                               },
                             }}
                           >
-                            <Stack direction="row" spacing={2} alignItems="flex-start">
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              alignItems="flex-start"
+                            >
                               <Box
                                 sx={{
                                   width: 40,
@@ -1022,166 +1479,7 @@ const CandidatProfilePage = () => {
         </TabPanel>
 
         <TabPanel value={selectedTab} index={1}>
-          <Box sx={{ p: 3 }}>
-            <TableContainer
-              component={Paper}
-              variant="outlined"
-              sx={{ borderRadius: 2 }}
-            >
-              <Table>
-                <TableHead sx={{ bgcolor: "#f5f5f5" }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Heures</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Moniteur</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Montant</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Reste</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Statut</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600 }}>
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {seances.map((seance) => (
-                    <TableRow key={seance.id} hover>
-                      <TableCell>
-                        {editingSeanceId === seance.id ? (
-                          <TextField
-                            type="date"
-                            value={editedSeance.dateSeance?.split("T")[0] || ""}
-                            onChange={(e) =>
-                              setEditedSeance({
-                                ...editedSeance,
-                                dateSeance: e.target.value,
-                              })
-                            }
-                            size="small"
-                          />
-                        ) : (
-                          new Date(seance.dateSeance).toLocaleDateString(
-                            "fr-TN",
-                            {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            },
-                          )
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingSeanceId === seance.id ? (
-                          <TextField
-                            type="number"
-                            value={editedSeance.nombreHeures}
-                            onChange={(e) =>
-                              setEditedSeance({
-                                ...editedSeance,
-                                nombreHeures: parseInt(e.target.value, 10),
-                              })
-                            }
-                            size="small"
-                            sx={{ width: 80 }}
-                          />
-                        ) : (
-                          <Chip
-                            label={`${seance.nombreHeures}h`}
-                            size="small"
-                            variant="outlined"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Avatar
-                            sx={{
-                              width: 32,
-                              height: 32,
-                              bgcolor: "#1976d2",
-                              fontSize: 14,
-                            }}
-                          >
-                            {seance.moniteur.prenom[0]}
-                            {seance.moniteur.nom[0]}
-                          </Avatar>
-                          <Typography variant="body2">
-                            {seance.moniteur.prenom} {seance.moniteur.nom}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {editingSeanceId === seance.id ? (
-                          <TextField
-                            type="number"
-                            value={editedSeance.montant}
-                            onChange={(e) =>
-                              setEditedSeance({
-                                ...editedSeance,
-                                montant: parseInt(e.target.value, 10),
-                              })
-                            }
-                            size="small"
-                            sx={{ width: 100 }}
-                          />
-                        ) : (
-                          <Typography variant="body2" fontWeight="bold">
-                            {seance.montant} DT
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          color={seance.resteAPayer > 0 ? "warning" : "success"}
-                          label={`${seance.resteAPayer} DT`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          color={
-                            seance.statut === "Payée"
-                              ? "success"
-                              : seance.statut === "Partielle"
-                                ? "warning"
-                                : "error"
-                          }
-                          label={seance.statut}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        {editingSeanceId === seance.id ? (
-                          <>
-                            <IconButton
-                              size="small"
-                              onClick={handleSaveSeance}
-                              color="primary"
-                            >
-                              <SaveIcon />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => setEditingSeanceId(null)}
-                              color="error"
-                            >
-                              <CloseIcon />
-                            </IconButton>
-                          </>
-                        ) : (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditSeance(seance)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
+          <SeancesTabPanel />
         </TabPanel>
 
         <TabPanel value={selectedTab} index={2}>
@@ -1252,114 +1550,196 @@ const CandidatProfilePage = () => {
 
         <TabPanel value={selectedTab} index={3}>
           <Box sx={{ p: 3 }}>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={4}>
-                <Card
-                  sx={{ bgcolor: "#1976d2", color: "white", borderRadius: 2 }}
-                >
-                  <CardContent>
-                    <Typography variant="h6">Total à payer</Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {totalMontant} DT
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card
-                  sx={{ bgcolor: "#4caf50", color: "white", borderRadius: 2 }}
-                >
-                  <CardContent>
-                    <Typography variant="h6">Total payé</Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {totalPaye} DT
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card
-                  sx={{
-                    bgcolor: totalReste > 0 ? "#ff9800" : "#4caf50",
-                    color: "white",
-                    borderRadius: 2,
-                  }}
-                >
-                  <CardContent>
-                    <Typography variant="h6">Reste à payer</Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {totalReste} DT
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-            <Card variant="outlined" sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  color="primary"
-                  fontWeight="bold"
-                >
-                  Historique des paiements
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-                        <TableCell>Date séance</TableCell>
-                        <TableCell>Montant total</TableCell>
-                        <TableCell>Montant payé</TableCell>
-                        <TableCell>Reste</TableCell>
-                        <TableCell>Statut</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {seances.map((seance) => (
-                        <TableRow key={seance.id}>
-                          <TableCell>
-                            {new Date(seance.dateSeance).toLocaleDateString(
-                              "fr-TN",
-                            )}
-                          </TableCell>
-                          <TableCell>{seance.montant} DT</TableCell>
-                          <TableCell>
-                            {seance.montant - seance.resteAPayer} DT
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              color={
-                                seance.resteAPayer > 0
-                                  ? "warning.main"
-                                  : "success.main"
-                              }
-                            >
-                              {seance.resteAPayer} DT
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              size="small"
-                              color={
-                                seance.statut === "Payée"
-                                  ? "success"
-                                  : "warning"
-                              }
-                              label={seance.statut}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
+            {contratActif?.id ? (
+              <PaiementSection contratId={contratActif.id} />
+            ) : (
+              <Alert severity="info">
+                Aucun contrat actif trouvé pour ce candidat.
+              </Alert>
+            )}
+          </Box>
+        </TabPanel>
+
+        <TabPanel value={selectedTab} index={4}>
+          <Box sx={{ p: 3 }}>
+            {/* Information sur le type de formation */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                <strong>Type de formation :</strong>{" "}
+                {contratActif?.typeFormation === 0
+                  ? "Code seulement"
+                  : contratActif?.typeFormation === 1
+                    ? "Conduite seulement"
+                    : contratActif?.typeFormation === 2
+                      ? "Formation complète"
+                      : "Non défini"}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Examens disponibles :</strong>{" "}
+                {contratActif?.typeFormation === 0 && " Code"}
+                {contratActif?.typeFormation === 1 &&
+                  " Circulation • * Manœuvre"}
+                {contratActif?.typeFormation === 2 &&
+                  " Code •  Circulation •  Manœuvre"}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Permis :</strong> {contratActif?.typePermisCode || "B"}
+              </Typography>
+            </Alert>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Typography variant="h6">Programmer un examen</Typography>
+              <Stack direction="row" spacing={1}>
+                {contratActif?.typeFormation !== 1 && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      setSelectedExamenType("Code");
+                      setExamenFormOpen(true);
+                    }}
+                  >
+                    Code
+                  </Button>
+                )}
+                {contratActif?.typeFormation !== 0 && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        setSelectedExamenType("Circulation");
+                        setExamenFormOpen(true);
+                      }}
+                    >
+                      Circulation
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        setSelectedExamenType("Manœuvre");
+                        setExamenFormOpen(true);
+                      }}
+                    >
+                      Manœuvre
+                    </Button>
+                  </>
+                )}
+              </Stack>
+            </Box>
+
+            <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
+              Examens à venir
+            </Typography>
+
+            <ExamensTable
+              examens={examensAVenir}
+              loading={examensLoading}
+              onDownloadPdf={telechargerConvocation}
+              onReport={handleOpenReportForm}
+              onResult={handleOpenResultatForm}
+            />
+
+            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+              Historique des examens
+            </Typography>
+
+            <ExamensTable
+              examens={historiqueExamens}
+              loading={examensLoading}
+              onDownloadPdf={telechargerConvocation}
+              onReport={handleOpenReportForm}
+              onResult={handleOpenResultatForm}
+            />
           </Box>
         </TabPanel>
       </Paper>
+
+      {/* Dialogue de confirmation d'annulation */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={() => setCancelDialogOpen(false)}
+      >
+        <DialogTitle>Confirmer l'annulation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Êtes-vous sûr de vouloir annuler cette séance de code ?
+            {selectedSeanceForCancel && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: "#f5f5f5", borderRadius: 1 }}>
+                <Typography variant="body2">
+                  <strong>Date:</strong>{" "}
+                  {formatDateCalendar(selectedSeanceForCancel.dateSeance)}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Horaire:</strong>{" "}
+                  {selectedSeanceForCancel.heureDebut?.substring(0, 5) || "—"}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Thème:</strong> {selectedSeanceForCancel.theme || "—"}
+                </Typography>
+              </Box>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelDialogOpen(false)}>
+            Non, annuler
+          </Button>
+          <Button
+            onClick={confirmCancelSeance}
+            color="error"
+            variant="contained"
+          >
+            Oui, annuler la séance
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialogues pour les examens */}
+      <ExamenForm
+        open={examenFormOpen}
+        onClose={() => setExamenFormOpen(false)}
+        onSave={handleProgrammerExamen}
+        contratId={profile.contrats?.[0]?.id}
+        typeExamen={selectedExamenType}
+        contratActif={profile?.contrats?.[0]}
+      />
+
+      <ResultatExamenForm
+        open={resultatFormOpen}
+        onClose={() => {
+          setResultatFormOpen(false);
+          setSelectedExamen(null);
+        }}
+        onSave={handleEnregistrerResultat}
+        examenId={selectedExamen?.id}
+        typeExamen={selectedExamen?.typeExamen}
+        typePermisCode={profile.typePermisCode || "B"}
+      />
+
+      <ReportExamenForm
+        open={reportFormOpen}
+        onClose={() => {
+          setReportFormOpen(false);
+          setSelectedExamen(null);
+        }}
+        onSave={handleReporterExamen}
+        examen={selectedExamen}
+        examenId={selectedExamen?.id}
+      />
 
       <EditCandidatDialog
         open={editDialogOpen && Boolean(candidatForEdit)}

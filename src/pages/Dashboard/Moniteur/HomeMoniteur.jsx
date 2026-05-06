@@ -1,8 +1,22 @@
-import { Grid, Paper, Stack, Typography, Box, Chip } from "@mui/material";
+import {
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+  Box,
+  Chip,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+import { useEffect, useState } from "react";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
+import DashboardUserMeta from "../../../components/common/dashboard/DashboardUserMeta";
+import { useAuth } from "../../../context/AuthContext";
+import { getPlanningMoniteurByDate } from "../../../api/seanceConduiteService";
+import { format } from "date-fns";
 
 const Card = ({ title, value, subtitle, icon }) => (
   <Paper
@@ -32,10 +46,39 @@ const Card = ({ title, value, subtitle, icon }) => (
 );
 
 const HomeMoniteur = () => {
+  const { user } = useAuth();
+  const [todaySessions, setTodaySessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTodaySessions = async () => {
+      try {
+        // Use user.id which is the moniteur ID
+        const moniteurId = user?.id;
+        if (!moniteurId) return;
+
+        const today = format(new Date(), "yyyy-MM-dd");
+        const data = await getPlanningMoniteurByDate(moniteurId, today);
+        setTodaySessions(data);
+      } catch (err) {
+        console.error("Error fetching sessions:", err);
+        setError("Erreur lors de la récupération des séances.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodaySessions();
+  }, [user]);
+
   return (
     <Grid container spacing={2.5}>
       <Grid item xs={12}>
-        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between">
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+        >
           <Box>
             <Typography variant="h4" fontWeight={800}>
               Dashboard Moniteur
@@ -43,15 +86,20 @@ const HomeMoniteur = () => {
             <Typography color="text.secondary">
               Organisation des séances et progression des candidats.
             </Typography>
+            <DashboardUserMeta />
           </Box>
-          <Chip icon={<DoneAllRoundedIcon />} color="primary" label="Journée planifiée" />
+          <Chip
+            icon={<DoneAllRoundedIcon />}
+            color="primary"
+            label="Journée planifiée"
+          />
         </Stack>
       </Grid>
       <Grid item xs={12} md={4}>
         <Card
           title="Séances aujourd'hui"
-          value="6"
-          subtitle="2 restantes"
+          value={todaySessions.length}
+          subtitle={`${todaySessions.filter((s) => !s.estEffectuee && !s.estAnnulee).length} restantes`}
           icon={<EventNoteOutlinedIcon />}
         />
       </Grid>
@@ -75,14 +123,98 @@ const HomeMoniteur = () => {
       <Grid item xs={12}>
         <Paper sx={{ p: 3, borderRadius: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Planning du jour
+            Planning du jour ({format(new Date(), "dd/MM/yyyy")})
           </Typography>
-          <Stack spacing={1.25}>
-            <Typography color="text.secondary">08:30 - Séance conduite avec Ahmed B.</Typography>
-            <Typography color="text.secondary">10:15 - Séance code avec Lina S.</Typography>
-            <Typography color="text.secondary">14:00 - Séance conduite avec Youssef K.</Typography>
-            <Typography color="text.secondary">16:00 - Évaluation finale avec Hiba R.</Typography>
-          </Stack>
+
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : error ? (
+            <Alert severity="error">{error}</Alert>
+          ) : todaySessions.length === 0 ? (
+            <Typography color="text.secondary">
+              Aucune séance prévue pour aujourd'hui.
+            </Typography>
+          ) : (
+            <Stack spacing={1.25}>
+              {todaySessions.map((session) => (
+                <Box
+                  key={session.id}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: session.estAnnulee
+                      ? "action.hover"
+                      : "background.default",
+                    borderLeft: "4px solid",
+                    borderColor: session.estAnnulee
+                      ? "error.main"
+                      : session.estEffectuee
+                        ? "success.main"
+                        : "primary.main",
+                    opacity: session.estAnnulee ? 0.7 : 1,
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      bgcolor: "action.hover",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Box>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={700}
+                        color={
+                          session.estAnnulee ? "text.disabled" : "text.primary"
+                        }
+                      >
+                        {session.heureDebut.substring(0, 5)} -{" "}
+                        {session.heureFin.substring(0, 5)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Séance conduite avec{" "}
+                        <strong>
+                          {session.candidatNom} {session.candidatPrenom}
+                        </strong>
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1}>
+                      {session.estAnnulee && (
+                        <Chip
+                          label="Annulée"
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                        />
+                      )}
+                      {session.estEffectuee && (
+                        <Chip
+                          label="Terminée"
+                          size="small"
+                          color="success"
+                          variant="outlined"
+                        />
+                      )}
+                      {!session.estAnnulee && !session.estEffectuee && (
+                        <Chip
+                          label="À venir"
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                    </Stack>
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          )}
         </Paper>
       </Grid>
     </Grid>

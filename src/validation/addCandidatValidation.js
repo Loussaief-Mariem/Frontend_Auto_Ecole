@@ -90,20 +90,12 @@ export const validateCandidat = (form) => {
   // =========================
   // ADRESSE
   // =========================
-  if (!form.adresse?.pays?.trim()) {
-    errors.pays = "Pays obligatoire";
+  if (!form.adresse_rue?.trim()) {
+    errors.adresse_rue = "Rue obligatoire";
   }
 
-  if (!form.adresse?.gouvernorat?.trim()) {
-    errors.gouvernorat = "Gouvernorat obligatoire";
-  }
-
-  if (!form.adresse?.ville?.trim()) {
-    errors.ville = "Ville obligatoire";
-  }
-
-  if (!form.adresse?.rue?.trim()) {
-    errors.rue = "Rue obligatoire";
+  if (!form.adresse_ville?.trim()) {
+    errors.adresse_ville = "Ville obligatoire";
   }
 
   // =========================

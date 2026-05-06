@@ -21,9 +21,22 @@ const Footer = () => {
         <Typography variant="body2" color="text.secondary">
           © {new Date().getFullYear()} AutoPilot. Tous droits réservés.
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Dashboard moderne de gestion auto-école
-        </Typography>
+        <Stack direction="row" spacing={3}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ cursor: "pointer", "&:hover": { color: "primary.main" } }}
+          >
+            Contact
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ cursor: "pointer", "&:hover": { color: "primary.main" } }}
+          >
+            Politique de confidentialité
+          </Typography>
+        </Stack>
       </Stack>
     </Box>
   );

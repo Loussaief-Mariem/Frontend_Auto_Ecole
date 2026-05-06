@@ -80,13 +80,6 @@ export const validateRegisterStep = (step, form) => {
         errors.Adresse = { ...errors.Adresse, Rue: "Rue obligatoire" };
       }
 
-      if (!form.Adresse?.Gouvernorat?.trim()) {
-        errors.Adresse = {
-          ...errors.Adresse,
-          Gouvernorat: "Gouvernorat obligatoire",
-        };
-      }
-
       if (!form.Adresse?.Ville?.trim()) {
         errors.Adresse = {
           ...errors.Adresse,

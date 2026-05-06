@@ -61,8 +61,8 @@ export const getPagedCandidatsByAutoEcole = async (
   return response.data;
 };
 //  Récupérer le profil complet du candidat
-export const getCandidatProfile = async (id) => {
-  const response = await api.get(`/Candidats/${id}/profile`);
+export const getCandidatProfile = async (id, autoEcoleId) => {
+  const response = await api.get(`/Candidats/${id}/profile?autoEcoleId=${autoEcoleId}`);
   return response.data;
 };
 
@@ -92,10 +92,14 @@ export const uploadCandidatPhoto = async (id, file) => {
 };
 
 // Télécharger fiche PDF candidat
-export const getCandidatFichePdf = async (id) => {
-  const response = await api.get(`/Candidats/${id}/fiche-pdf`, {
+export const getCandidatFichePdf = async (id, autoEcoleId) => {
+  const response = await api.get(`/Candidats/${id}/fiche-pdf?autoEcoleId=${autoEcoleId}`, {
     responseType: "blob", // très important
   });
 
+  return response.data;
+};
+export const getAllActiveCandidats = async () => {
+  const response = await api.get("/Candidats/active");
   return response.data;
 };

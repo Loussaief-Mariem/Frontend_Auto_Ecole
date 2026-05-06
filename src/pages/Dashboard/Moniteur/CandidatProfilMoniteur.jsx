@@ -34,34 +34,34 @@ import {
   DialogActions,
 } from "@mui/material";
 import {
-  Edit as EditIcon,
   Phone as PhoneIcon,
-  Save as SaveIcon,
-  Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
   Pending as PendingIcon,
   Person as PersonIcon,
   School as SchoolIcon,
   DriveEta as DriveEtaIcon,
-  Cake as CakeIcon,
   Smartphone as SmartphoneIcon,
   MarkEmailRead as MarkEmailReadIcon,
   Comment as CommentIcon,
-  EventNote as EventIcon,
   Cancel as CancelIcon,
   Add as AddIcon,
+  AddCircle as AddCircleIcon,
+  Restore as RestoreIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import api from "../../../api/axios";
 import {
-  getPlanningMoniteur,
   planifierSeanceConduite,
+  getSeanceConduiteApiErrorMessage,
   marquerPresence,
   ajouterRemarque,
   annulerSeanceConduite,
+  desannulerSeance,
+  planifierSeancesBatch,
 } from "../../../api/seanceConduiteService";
 import { getCandidatProfile } from "../../../api/candidatService";
 import SeanceConduiteForm from "../../../components/common/seances/SeanceConduiteForm";
+import SeanceConduiteBatchForm from "../../../components/common/seances/SeanceConduiteBatchForm";
 import candidatPlaceholder from "../../../assets/candidat.jpg";
 import {
   getEtatCompteDisplay,
@@ -102,28 +102,30 @@ function resolveCandidatPhotoSrc(photoPath, placeholder) {
   return `${origin}${path}`;
 }
 
-/** Moyenne des notes */
+/** Moyenne des notes - Ignore les séances annulées */
 const calculerMoyenneNotes = (seances) => {
   const seancesAvecNote = seances.filter(
-    (s) => s.noteProgression && s.noteProgression > 0,
+    (s) => s.noteProgression && s.noteProgression > 0 && !s.estAnnulee,
   );
   if (seancesAvecNote.length === 0) return 0;
   const somme = seancesAvecNote.reduce((acc, s) => acc + s.noteProgression, 0);
   return (somme / seancesAvecNote.length).toFixed(1);
 };
 
-/** Dernière remarque */
+/** Dernière remarque - Triée par date */
 const getDerniereRemarque = (seances) => {
-  const seancesAvecRemarque = seances.filter((s) => s.remarquesPedagogiques);
+  const seancesAvecRemarque = seances
+    .filter((s) => s.remarquesPedagogiques && !s.estAnnulee)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
   if (seancesAvecRemarque.length === 0) return null;
-  return seancesAvecRemarque[seancesAvecRemarque.length - 1];
+  return seancesAvecRemarque[0];
 };
 
 const CandidatProfilMoniteur = () => {
   const theme = useTheme();
   const { id } = useParams();
   const { user } = useAuth();
-  //console.log("MoniteurProfilCandidat - id:", id, "user:", user);
 
   const [candidat, setCandidat] = useState(null);
   const [seances, setSeances] = useState([]);
@@ -131,33 +133,31 @@ const CandidatProfilMoniteur = () => {
   const [error, setError] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
 
-  // États pour l'édition des séances
-  const [editingSeanceId, setEditingSeanceId] = useState(null);
-  const [editedSeance, setEditedSeance] = useState({});
-
   // États pour les dialogues
   const [openPlanifierForm, setOpenPlanifierForm] = useState(false);
+  const [openPlanifierBatchForm, setOpenPlanifierBatchForm] = useState(false);
   const [openRemarqueDialog, setOpenRemarqueDialog] = useState(false);
   const [selectedSeance, setSelectedSeance] = useState(null);
   const [remarqueText, setRemarqueText] = useState("");
   const [noteValue, setNoteValue] = useState(0);
   const [planificationLoading, setPlanificationLoading] = useState(false);
+  const [batchPlanificationLoading, setBatchPlanificationLoading] =
+    useState(false);
+  const [planificationMessageError, setPlanificationMessageError] =
+    useState("");
 
-  // Charger les données
+  const clearPlanificationMessageError = useCallback(() => {
+    setPlanificationMessageError("");
+  }, []);
+
+  // Charger les données - utilise directement les séances du candidat
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Charger les infos du candidat
-      const candidatData = await getCandidatProfile(id);
+      const candidatData = await getCandidatProfile(id, user?.autoEcoleId);
       setCandidat(candidatData);
-
-      // Charger les séances de ce candidat (via le moniteur)
-      console.log("MoniteurProfilCandidat - user:", user);
-      const seancesData = await getPlanningMoniteur(user.user.id);
-      const seancesCandidat = seancesData.filter(
-        (s) => s.candidatId === parseInt(id),
-      );
+      const seancesCandidat = candidatData.seancesConduite || [];
       setSeances(seancesCandidat);
     } catch (err) {
       setError(
@@ -166,19 +166,37 @@ const CandidatProfilMoniteur = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, user?.moniteurId]);
+  }, [id]);
+
+  // Rafraîchir uniquement les séances (plus léger)
+  const refreshSeances = useCallback(async () => {
+    try {
+      const candidatData = await getCandidatProfile(id, user?.autoEcoleId);
+      setSeances(candidatData.seancesConduite || []);
+    } catch (err) {
+      console.error("Erreur lors du rafraîchissement des séances:", err);
+    }
+  }, [id]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (id) {
+      loadData();
+    }
+  }, [loadData, id]);
 
   // Statistiques
   const stats = useMemo(() => {
     const totalSeances = seances.length;
-    const seancesPresent = seances.filter((s) => s.present).length;
-    const seancesAbsent = seances.filter((s) => s.present === false).length;
+    const seancesPresent = seances.filter(
+      (s) => s.present && !s.estAnnulee,
+    ).length;
+    const seancesAbsent = seances.filter(
+      (s) => s.present === false && !s.estAnnulee,
+    ).length;
     const seancesAnnulees = seances.filter((s) => s.estAnnulee).length;
-    const seancesAvecNote = seances.filter((s) => s.noteProgression > 0).length;
+    const seancesAvecNote = seances.filter(
+      (s) => s.noteProgression > 0 && !s.estAnnulee,
+    ).length;
     const moyenneNotes = calculerMoyenneNotes(seances);
     const derniereRemarque = getDerniereRemarque(seances);
 
@@ -197,7 +215,7 @@ const CandidatProfilMoniteur = () => {
   const handleMarquerPresence = async (seanceId, present) => {
     try {
       await marquerPresence(seanceId, present);
-      await loadData();
+      await refreshSeances();
     } catch (err) {
       alert(err.response?.data?.message || "Erreur lors du marquage");
     }
@@ -211,7 +229,7 @@ const CandidatProfilMoniteur = () => {
       setSelectedSeance(null);
       setRemarqueText("");
       setNoteValue(0);
-      await loadData();
+      await refreshSeances();
     } catch (err) {
       alert(
         err.response?.data?.message || "Erreur lors de l'ajout de la remarque",
@@ -223,9 +241,22 @@ const CandidatProfilMoniteur = () => {
     if (window.confirm("Êtes-vous sûr de vouloir annuler cette séance ?")) {
       try {
         await annulerSeanceConduite(seanceId);
-        await loadData();
+        await refreshSeances();
+        alert("Séance annulée avec succès !");
       } catch (err) {
         alert(err.response?.data?.message || "Erreur lors de l'annulation");
+      }
+    }
+  };
+
+  const handleDesannulerSeance = async (seanceId) => {
+    if (window.confirm("Êtes-vous sûr de vouloir rétablir cette séance ?")) {
+      try {
+        await desannulerSeance(seanceId);
+        await refreshSeances();
+        alert("Séance rétablie avec succès !");
+      } catch (err) {
+        alert(err.response?.data?.message || "Erreur lors du rétablissement");
       }
     }
   };
@@ -236,15 +267,41 @@ const CandidatProfilMoniteur = () => {
       await planifierSeanceConduite({
         ...data,
         candidatId: parseInt(id),
-        moniteurId: user?.moniteurId,
+        moniteurId: user.user.id,
       });
+      clearPlanificationMessageError();
       setOpenPlanifierForm(false);
-      await loadData();
+      await refreshSeances();
       alert("Séance planifiée avec succès !");
     } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors de la planification");
+      setPlanificationMessageError(getSeanceConduiteApiErrorMessage(err));
+      return false;
     } finally {
       setPlanificationLoading(false);
+    }
+  };
+
+  const handlePlanifierSeancesBatch = async (seancesData) => {
+    setBatchPlanificationLoading(true);
+    try {
+      const seancesAvecInfos = seancesData.map((seance) => ({
+        ...seance,
+        candidatId: parseInt(id),
+        moniteurId: user.user.id,
+      }));
+
+      await planifierSeancesBatch(seancesAvecInfos);
+      setOpenPlanifierBatchForm(false);
+      await refreshSeances();
+      alert(`${seancesData.length} séance(s) planifiée(s) avec succès !`);
+    } catch (err) {
+      console.error("Erreur batch:", err);
+      alert(
+        err.response?.data?.message ||
+          "Erreur lors de la planification des séances",
+      );
+    } finally {
+      setBatchPlanificationLoading(false);
     }
   };
 
@@ -358,7 +415,10 @@ const CandidatProfilMoniteur = () => {
   const sexeNum = candidat.sexe;
   const showNomEpoux = sexeNum !== Sexe.Homme;
   const photoPathRaw = candidat.photoPath ?? candidat.PhotoPath ?? null;
-  const avatarPhotoSrc = resolveCandidatPhotoSrc(photoPathRaw, candidatPlaceholder);
+  const avatarPhotoSrc = resolveCandidatPhotoSrc(
+    photoPathRaw,
+    candidatPlaceholder,
+  );
 
   return (
     <Box
@@ -439,20 +499,43 @@ const CandidatProfilMoniteur = () => {
             </Stack>
           </Grid>
           <Grid item>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setOpenPlanifierForm(true)}
-              sx={{
-                bgcolor: "white",
-                color: "#1e3c72",
-                "&:hover": { bgcolor: alpha("#fff", 0.9) },
-                textTransform: "none",
-                fontWeight: "bold",
-              }}
-            >
-              Planifier séance
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  clearPlanificationMessageError();
+                  setOpenPlanifierForm(true);
+                }}
+                sx={{
+                  bgcolor: "white",
+                  color: "#1e3c72",
+                  "&:hover": { bgcolor: alpha("#fff", 0.9) },
+                  textTransform: "none",
+                  fontWeight: "bold",
+                }}
+              >
+                Planifier 1 séance
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<AddCircleIcon />}
+                onClick={() => setOpenPlanifierBatchForm(true)}
+                sx={{
+                  bgcolor: "white",
+                  color: "#1e3c72",
+                  borderColor: "white",
+                  "&:hover": {
+                    bgcolor: alpha("#fff", 0.9),
+                    borderColor: "white",
+                  },
+                  textTransform: "none",
+                  fontWeight: "bold",
+                }}
+              >
+                Planifier plusieurs
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </Paper>
@@ -774,10 +857,11 @@ const CandidatProfilMoniteur = () => {
                               setOpenRemarqueDialog(true);
                             }}
                             title="Ajouter remarque"
+                            disabled={seance.estAnnulee}
                           >
                             <CommentIcon />
                           </IconButton>
-                          {!seance.estAnnulee && (
+                          {!seance.estAnnulee ? (
                             <IconButton
                               size="small"
                               color="error"
@@ -785,6 +869,15 @@ const CandidatProfilMoniteur = () => {
                               title="Annuler"
                             >
                               <CancelIcon />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleDesannulerSeance(seance.id)}
+                              title="Rétablir"
+                            >
+                              <RestoreIcon />
                             </IconButton>
                           )}
                         </TableCell>
@@ -801,7 +894,7 @@ const CandidatProfilMoniteur = () => {
         <TabPanel value={selectedTab} index={2}>
           <Box sx={{ p: 3 }}>
             <Grid container spacing={3}>
-              {/* Graphique d'évolution des notes */}
+              {/* Évolution des notes */}
               <Grid item xs={12}>
                 <Card variant="outlined">
                   <CardContent>
@@ -814,8 +907,9 @@ const CandidatProfilMoniteur = () => {
                       Évolution des notes
                     </Typography>
                     <Divider sx={{ mb: 2 }} />
-                    {seances.filter((s) => s.noteProgression > 0).length ===
-                    0 ? (
+                    {seances.filter(
+                      (s) => s.noteProgression > 0 && !s.estAnnulee,
+                    ).length === 0 ? (
                       <Typography color="text.secondary">
                         Aucune note enregistrée
                       </Typography>
@@ -834,8 +928,12 @@ const CandidatProfilMoniteur = () => {
                             {seances
                               .filter(
                                 (s) =>
-                                  s.noteProgression > 0 ||
-                                  s.remarquesPedagogiques,
+                                  (s.noteProgression > 0 ||
+                                    s.remarquesPedagogiques) &&
+                                  !s.estAnnulee,
+                              )
+                              .sort(
+                                (a, b) => new Date(a.date) - new Date(b.date),
                               )
                               .map((seance) => (
                                 <TableRow key={seance.id}>
@@ -904,14 +1002,29 @@ const CandidatProfilMoniteur = () => {
       {/* Dialogue pour planifier une séance */}
       <SeanceConduiteForm
         open={openPlanifierForm}
-        onClose={() => setOpenPlanifierForm(false)}
+        onClose={() => {
+          clearPlanificationMessageError();
+          setOpenPlanifierForm(false);
+        }}
         onSubmit={handlePlanifierSeance}
-        moniteurs={[
-          { id: user?.moniteurId, prenom: user?.prenom, nom: user?.nom },
-        ]}
+        moniteurId={user?.user?.id}
         candidats={[candidat]}
         initialData={{ candidatId: parseInt(id) }}
         loading={planificationLoading}
+        messageError={planificationMessageError}
+        onClearMessageError={clearPlanificationMessageError}
+      />
+
+      {/* Dialogue pour planifier plusieurs séances */}
+      <SeanceConduiteBatchForm
+        open={openPlanifierBatchForm}
+        onClose={() => setOpenPlanifierBatchForm(false)}
+        onSubmit={handlePlanifierSeancesBatch}
+        moniteurs={[
+          { id: user.user.id, prenom: user.user.prenom, nom: user.user.nom },
+        ]}
+        candidats={[candidat]}
+        loading={batchPlanificationLoading}
       />
 
       {/* Dialogue pour ajouter remarque */}

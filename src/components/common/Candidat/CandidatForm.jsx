@@ -23,16 +23,15 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import CompteForm from "./CompteForm";
-import AdresseForm from "./AdresseForm";
 import useCandidatForm from "../../../hooks/useCandidatForm";
-import AdresseService from "../../../api/adresseService";
+import { getMoniteursByAutoEcole } from "../../../api/moniteurService";
 
 const CandidatForm = ({ errMessage, setErrMessage }) => {
   const {
     formData,
     handleChange,
     handleSubmit,
-    setAdresse,
+
     setCompte,
     documentsState,
     setDocumentChecked,
@@ -40,19 +39,23 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
     fieldErrors,
     clearFieldError,
   } = useCandidatForm({ setErrMessage });
-  const [paysList, setPaysList] = useState([]);
+  const [moniteurs, setMoniteurs] = useState([]);
   const typePermisList = ["A", "AA", "B", "BE", "C", "CE", "D", "DE", "G", "H"];
+  console.log("Form data in CandidatForm:", formData);
   useEffect(() => {
-    const fetchPays = async () => {
+    const fetchMoniteurs = async () => {
       try {
-        const data = await AdresseService.getPays();
-        setPaysList(data);
-      } catch (fetchError) {
-        console.error("Erreur lors du chargement des pays :", fetchError);
+        const autoEcoleId = formData.compte.autoEcoleId;
+        if (autoEcoleId) {
+          const data = await getMoniteursByAutoEcole(autoEcoleId);
+          setMoniteurs(data);
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des moniteurs :", err);
       }
     };
-    fetchPays();
-  }, []);
+    fetchMoniteurs();
+  }, [formData.compte.autoEcoleId]);
 
   const selectInputSx = {
     width: "100%",
@@ -124,6 +127,7 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
                   value={formData.nomEpoux}
                   onChange={handleChange}
                   fullWidth
+                  disabled={formData.sexe === 0}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -256,18 +260,64 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
             <Typography variant="h6" fontWeight="medium" color="text.secondary">
               Adresse
             </Typography>
-            <AdresseForm
-              setAdresse={setAdresse}
-              initialAdresse={formData.adresse}
-              paysOptions={paysList}
-              fieldErrors={{
-                pays: fieldErrors.pays,
-                gouvernorat: fieldErrors.gouvernorat,
-                ville: fieldErrors.ville,
-                rue: fieldErrors.rue,
-              }}
-              clearFieldError={clearFieldError}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Rue"
+                  name="adresse_rue"
+                  value={formData.adresse_rue}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="ex: route gremda km1"
+                  error={!!fieldErrors.adresse_rue}
+                  helperText={fieldErrors.adresse_rue || ""}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Ville"
+                  name="adresse_ville"
+                  value={formData.adresse_ville}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="ex: Sfax"
+                  error={!!fieldErrors.adresse_ville}
+                  helperText={fieldErrors.adresse_ville || ""}
+                />
+              </Grid>
+            </Grid>
+
+            <Divider />
+
+            {/* Affectation Moniteur */}
+            <Typography variant="h6" fontWeight="medium" color="text.secondary">
+              Affectation
+            </Typography>
+            <FormControl fullWidth error={!!fieldErrors.moniteurId}>
+              <InputLabel>Moniteur Référent</InputLabel>
+              <Select
+                name="moniteurId"
+                value={formData.moniteurId}
+                onChange={handleChange}
+                label="Moniteur Référent"
+                sx={selectInputSx}
+              >
+                <MenuItem value="">
+                  <em>Aucun moniteur affecté</em>
+                </MenuItem>
+                {moniteurs.map((moniteur) => (
+                  <MenuItem key={moniteur.id} value={moniteur.id}>
+                    {moniteur.nom} {moniteur.prenom} ({moniteur.telephone})
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>
+                {fieldErrors.moniteurId ||
+                  "Sélectionnez le moniteur qui suivra la formation de ce candidat"}
+              </FormHelperText>
+            </FormControl>
 
             <Divider />
 
@@ -390,15 +440,6 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
                     <FormHelperText>{fieldErrors.typeFormation}</FormHelperText>
                   ) : null}
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Centre d'examen"
-                  name="centreExamen"
-                  value={formData.centreExamen}
-                  onChange={handleChange}
-                  fullWidth
-                />
               </Grid>
             </Grid>
 
