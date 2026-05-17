@@ -130,25 +130,17 @@ const menusByRole = {
   ],
   Candidat: [
     {
-      text: "Tableau de bord",
+      text: "Accueil",
       icon: <DashboardRoundedIcon />,
       path: "/dashboard/candidat",
     },
-    {
-      text: "Mon profil",
-      icon: <PersonOutlineIcon />,
-      path: "/dashboard/candidat/profile",
-    },
+
     {
       text: "Mes séances",
       icon: <CalendarMonthOutlinedIcon />,
       path: "/dashboard/candidat/seances",
     },
-    {
-      text: "Mes heures",
-      icon: <AccessTimeOutlinedIcon />,
-      path: "/dashboard/candidat/heures",
-    },
+
     {
       text: "Mes examens",
       icon: <AssignmentOutlinedIcon />,
@@ -160,9 +152,9 @@ const menusByRole = {
       path: "/dashboard/candidat/finances",
     },
     {
-      text: "Tests Blancs",
+      text: "Espace Entraînement",
       icon: <FactCheckOutlinedIcon />,
-      path: "/dashboard/candidat/tests", // I'll assume they want a list of tests first
+      path: "/dashboard/candidat/tests",
     },
   ],
 };

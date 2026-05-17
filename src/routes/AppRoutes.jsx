@@ -6,26 +6,21 @@ import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ActivationPage from "../pages/auth/ActivationPage";
 import CheckEmailPage from "../pages/auth/CheckEmailPage";
 import HomePage from "../pages/user/HomePage";
-
 import DashboardLayout from "../components/common/dashboard/DashboardLayout";
 import HomeProprietaire from "../pages/Dashboard/Proprietaire/HomeProprietaire";
 import ProfileProprietaire from "../pages/Dashboard/Proprietaire/ProfileProprietaire";
 import AddUser from "../pages/Dashboard/Proprietaire/AddUser";
 import GestionUtilisateurs from "../pages/Dashboard/Proprietaire/GestionUtilisateurs";
-
 import HomeMoniteur from "../pages/Dashboard/Moniteur/HomeMoniteur";
 import HomeSecretaire from "../pages/Dashboard/Secretaire/HomeSecretaire";
 import AddCandidatPage from "../pages/Dashboard/Secretaire/AddCandidatPage";
 import TestManagementPage from "../pages/Dashboard/Secretaire/TestManagementPage";
-
-
 import PrivateRoute from "./PrivateRoute";
 import CandidatProfilePage from "../pages/Dashboard/Secretaire/CandidatProfilePage";
 import CandidatsListPage from "../pages/Dashboard/Secretaire/CandidatsListPage";
 import PlanningConduitePage from "../pages/Dashboard/Moniteur/PlanningConduitePage";
 import CandidatProfilMoniteur from "../pages/Dashboard/Moniteur/CandidatProfilMoniteur";
 import TarifsManagement from "../pages/Dashboard/Proprietaire/TarifsManagement";
-
 // NOUVEAUX IMPORTS
 import PlanningSeancesPage from "../pages/Dashboard/Secretaire/PlanningSeancesPage";
 import PlanningConduiteMoniteur from "../pages/Dashboard/Moniteur/PlanningConduiteMoniteur";
@@ -34,7 +29,7 @@ import PlanningConduiteMoniteur from "../pages/Dashboard/Moniteur/PlanningCondui
 import HomeCandidat from "../pages/Dashboard/Candidat/HomeCandidat";
 import ProfileCandidat from "../pages/Dashboard/Candidat/ProfileCandidat";
 import SessionsCandidat from "../pages/Dashboard/Candidat/SessionsCandidat";
-import HoursCandidat from "../pages/Dashboard/Candidat/HoursCandidat";
+
 import ExamsCandidat from "../pages/Dashboard/Candidat/ExamsCandidat";
 import FinancesCandidat from "../pages/Dashboard/Candidat/FinancesCandidat";
 import TestsCandidat from "../pages/Dashboard/Candidat/TestsCandidat";
@@ -104,7 +99,7 @@ const AppRoutes = () => {
             <Route index element={<HomeCandidat />} />
             <Route path="profile" element={<ProfileCandidat />} />
             <Route path="seances" element={<SessionsCandidat />} />
-            <Route path="heures" element={<HoursCandidat />} />
+
             <Route path="examens" element={<ExamsCandidat />} />
             <Route path="finances" element={<FinancesCandidat />} />
             <Route path="tests" element={<TestsCandidat />} />

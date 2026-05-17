@@ -29,7 +29,8 @@ const TypeExamenValues = {
   Manoeuvre: 2,
 };
 
-const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
+const ExamenForm = ({ open, onClose, onSave, contratId,  }) => {
+  console.log("contratId", contratId);  
   const [formData, setFormData] = useState({
     contratId: contratId,
     typeExamen: TypeExamenValues.Code, // ← ICI: utiliser 0 au lieu de 'Code'
@@ -108,7 +109,7 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         Programmer un examen - {getTypeExamenLabel(formData.typeExamen)}
       </DialogTitle>
@@ -122,7 +123,7 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
 
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Type d'examen</InputLabel>
                   <Select
@@ -137,16 +138,17 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <DatePicker
                   label="Date de l'examen"
                   value={formData.date}
                   onChange={(newValue) => handleChange("date", newValue)}
+                  minDate={new Date()}
                   slotProps={{ textField: { fullWidth: true, required: true } }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Heure"
                   type="time"
@@ -158,7 +160,7 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Centre d'examen"
                   fullWidth
@@ -169,7 +171,7 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Lieu"
                   fullWidth
@@ -180,13 +182,8 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
                 />
               </Grid>
 
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" sx={{ mb: 1, mt: 1 }}>
-                  Informations de convocation
-                </Typography>
-              </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Numéro de liste"
                   fullWidth
@@ -198,7 +195,7 @@ const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Numéro de convocation"
                   fullWidth

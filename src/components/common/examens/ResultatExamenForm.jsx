@@ -225,10 +225,10 @@ const ResultatExamenForm = ({
               onChange={(e) => handleChange("statut", e.target.value)}
               label="Statut"
             >
-              <MenuItem value={StatutExamen.SATISFAIT}>
+              <MenuItem value={StatutExamen.Satisfait}>
                 Satisfait (Réussi)
               </MenuItem>
-              <MenuItem value={StatutExamen.AJOURNE}>Ajourné (Échoué)</MenuItem>
+              <MenuItem value={StatutExamen.Ajourne}>Ajourné (Échoué)</MenuItem>
             </Select>
           </FormControl>
         </Box>

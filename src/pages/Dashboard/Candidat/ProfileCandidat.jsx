@@ -17,15 +17,14 @@ import {
 } from "@mui/material";
 import { useAuth } from "../../../context/AuthContext";
 import { useCandidat } from "../../../hooks/useCandidat";
-import { TypeFormation, EtatDossier, StatutDocument, TypeDocument } from "../../../enums";
+import { TypeFormation } from "../../../enums";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
+
 
 const getTypeFormationLabel = (type) => {
   switch (type) {
@@ -40,33 +39,7 @@ const getTypeFormationLabel = (type) => {
   }
 };
 
-const getEtatDossierLabel = (etat) => {
-  switch (etat) {
-    case EtatDossier.Incomplet:
-      return "Incomplet";
-    case EtatDossier.Complet:
-      return "Complet";
-    case EtatDossier.Annule:
-      return "Annulé";
-    case EtatDossier.Cloture:
-      return "Clôturé";
-    default:
-      return "Non défini";
-  }
-};
 
-const getDocumentTypeLabel = (type) => {
-  switch (type) {
-    case TypeDocument.PhotoIdentite:
-      return "Photo d'identité";
-    case TypeDocument.CopieCIN:
-      return "Copie CIN";
-    case TypeDocument.CertificatMedical:
-      return "Certificat médical";
-    default:
-      return "Document";
-  }
-};
 
 const ProfileCandidat = () => {
   const { user } = useAuth();
@@ -372,118 +345,7 @@ const ProfileCandidat = () => {
             </form>
           </Paper>
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              mt: 4,
-              borderRadius: 4,
-              border: "1px solid",
-              borderColor: "divider",
-              bgcolor: "rgba(0,0,0,0.02)",
-            }}
-          >
-            <Typography variant="h6" fontWeight={800} mb={2}>
-              Statut du Dossier
-            </Typography>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Numéro de dossier :{" "}
-                <Box component="span" fontWeight={700} color="text.primary">
-                  {profile?.dossierCandidat?.numDossier || "—"}
-                </Box>
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                État actuel :{" "}
-                <Box
-                  component="span"
-                  fontWeight={700}
-                  color={
-                    profile?.dossierCandidat?.etatDossier ===
-                    EtatDossier.Complet
-                      ? "success.main"
-                      : "primary.main"
-                  }
-                >
-                  {getEtatDossierLabel(profile?.dossierCandidat?.etatDossier)}
-                </Box>
-              </Typography>
-            </Box>
 
-            {profile?.dossierCandidat?.documents && (
-              <>
-                <Divider sx={{ my: 2 }} />
-                <Typography
-                  variant="subtitle2"
-                  fontWeight={700}
-                  color="text.primary"
-                  mb={2}
-                >
-                  Pièces du dossier :
-                </Typography>
-                <Stack spacing={1.5}>
-                  {profile.dossierCandidat.documents.map((doc) => {
-                    const isRecu = doc.statutDocument === StatutDocument.Recu;
-                    return (
-                      <Box
-                        key={doc.id}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          p: 1.5,
-                          borderRadius: 2,
-                          bgcolor: isRecu
-                            ? "rgba(76, 175, 80, 0.08)"
-                            : "rgba(244, 67, 54, 0.08)",
-                          border: "1px solid",
-                          borderColor: isRecu
-                            ? "rgba(76, 175, 80, 0.2)"
-                            : "rgba(244, 67, 54, 0.2)",
-                        }}
-                      >
-                        <Stack direction="row" alignItems="center" spacing={1.5}>
-                          {isRecu ? (
-                            <CheckCircleIcon
-                              sx={{ color: "success.main", fontSize: 20 }}
-                            />
-                          ) : (
-                            <CancelIcon
-                              sx={{ color: "error.main", fontSize: 20 }}
-                            />
-                          )}
-                          <Box>
-                            <Typography variant="body2" fontWeight={600}>
-                              {getDocumentTypeLabel(doc.typeDocument)}
-                            </Typography>
-                            {isRecu && doc.dateReception && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "block" }}
-                              >
-                                Reçu le{" "}
-                                {new Date(doc.dateReception).toLocaleDateString(
-                                  "fr-TN",
-                                )}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-                        <Chip
-                          label={isRecu ? "Reçu" : "Manquant"}
-                          size="small"
-                          color={isRecu ? "success" : "error"}
-                          variant="filled"
-                          sx={{ fontWeight: 700, fontSize: "0.7rem" }}
-                        />
-                      </Box>
-                    );
-                  })}
-                </Stack>
-              </>
-            )}
-          </Paper>
         </Grid>
       </Grid>
     </Box>

@@ -101,6 +101,7 @@ const ExamensTable = ({
   onDownloadPdf,
   onReport,
   onResult,
+  showReport = true,
 }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [reportingId, setReportingId] = useState(null);
@@ -156,7 +157,7 @@ const ExamensTable = ({
     const isProgramme = ["Programmé", "Programme", "PROGRAMME"].includes(
       statut,
     );
-    if (isProgramme) {
+    if (isProgramme && showReport) {
       actions.push({
         type: "report",
         show: true,
@@ -272,7 +273,7 @@ const ExamensTable = ({
                   />
                 </TableCell>
                 <TableCell>
-                  {examen.noteCode ? `${examen.noteCode}/40` : "—"}
+                  {examen.noteCode ? `${examen.noteCode}/30` : "—"}
                 </TableCell>
                 <TableCell align="center">
                   <Box

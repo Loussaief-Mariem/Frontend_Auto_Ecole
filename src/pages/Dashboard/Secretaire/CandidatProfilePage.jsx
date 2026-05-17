@@ -38,7 +38,6 @@ import {
   LocationOn as LocationIcon,
   Save as SaveIcon,
   Close as CloseIcon,
-  Description as DocumentIcon,
   CheckCircle as CheckCircleIcon,
   Pending as PendingIcon,
   Receipt as ReceiptIcon,
@@ -68,9 +67,6 @@ import api from "../../../api/axios";
 import candidatPlaceholder from "../../../assets/candidat.jpg";
 import { useAuth } from "../../../context/AuthContext";
 import {
-  TypeDocument,
-  StatutDocument,
-  EtatDossier,
   TypeFormation,
   getEtatCompteDisplay,
   Sexe,
@@ -80,24 +76,6 @@ import ResultatExamenForm from "../../../components/common/examens/ResultatExame
 import ReportExamenForm from "../../../components/common/examens/ReportExamenForm";
 import ExamensTable from "../../../components/common/examens/ExamensTable";
 import useExamens from "../../../hooks/useExamens";
-
-const LABEL_TYPE_DOCUMENT = {
-  [TypeDocument.PhotoIdentite]: "Photo d'identité",
-  [TypeDocument.CopieCIN]: "Copie CIN",
-  [TypeDocument.CertificatMedical]: "Certificat médical",
-};
-
-const LABEL_STATUT_DOCUMENT = {
-  [StatutDocument.Manquant]: "Manquant",
-  [StatutDocument.Recu]: "Reçu",
-};
-
-const LABEL_ETAT_DOSSIER = {
-  [EtatDossier.Incomplet]: "Incomplet",
-  [EtatDossier.Complet]: "Complet",
-  [EtatDossier.Annule]: "Annulé",
-  [EtatDossier.Cloture]: "Clôturé",
-};
 
 const LABEL_TYPE_FORMATION = {
   [TypeFormation.Theorique]: "Code seulement",
@@ -161,8 +139,6 @@ const CandidatProfilePage = () => {
     contratActif,
     adresse,
     compte,
-    dossierCandidat,
-    documents,
     seancesCode,
     updateCandidat,
     uploadPhoto,
@@ -196,7 +172,8 @@ const CandidatProfilePage = () => {
     telechargerConvocation,
     refresh: refreshExamens,
   } = useExamens(profile?.contrat?.id);
-
+ console.log("profile.contrat:", profile?.contrat);
+console.log("profile", profile)
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [photoLoadError, setPhotoLoadError] = useState(false);
@@ -457,11 +434,6 @@ const CandidatProfilePage = () => {
   const totalMontant = situationFinanciere?.total ?? 0;
   const totalReste = situationFinanciere?.reste ?? 0;
   const totalHeures = seancesData.reduce((sum, s) => sum + s.nombreHeures, 0);
-
-  const etatDossierLabel =
-    dossierCandidat != null
-      ? (LABEL_ETAT_DOSSIER[dossierCandidat.etatDossier] ?? "—")
-      : "—";
 
   const etatCompteDisplay = getEtatCompteDisplay(compte);
 
@@ -998,11 +970,7 @@ const CandidatProfilePage = () => {
                   sx={{ borderColor: "white", color: "white" }}
                 />
               ) : null}
-              <Chip
-                label={`Dossier ${etatDossierLabel}`}
-                size="small"
-                sx={{ bgcolor: "#ff9800", color: "white" }}
-              />
+
             </Stack>
           </Grid>
           <Grid item>
@@ -1227,7 +1195,6 @@ const CandidatProfilePage = () => {
             iconPosition="start"
             label="Séances & Suivi"
           />
-          <Tab icon={<DocumentIcon />} iconPosition="start" label="Documents" />
           <Tab icon={<ReceiptIcon />} iconPosition="start" label="Paiements" />
           <Tab icon={<ExamenIcon />} iconPosition="start" label="Examens" />
         </Tabs>
@@ -1447,31 +1414,7 @@ const CandidatProfilePage = () => {
                         </Grid>
                       ))}
                     </Grid>
-                    {dossierCandidat?.numDossier ? (
-                      <Box
-                        sx={{
-                          mt: 2.5,
-                          pt: 2.5,
-                          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">
-                          N° dossier :{" "}
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            fontWeight={700}
-                            color="text.primary"
-                          >
-                            {dossierCandidat.numDossier}
-                          </Typography>
-                          {dossierCandidat.dateCreation
-                            ? ` — créé le ${formatDateTime(dossierCandidat.dateCreation)}`
-                            : ""}
-                        </Typography>
-                      </Box>
-                    ) : null}
-                  </CardContent>
+                    </CardContent>
                 </Card>
               </Grid>
             </Grid>
@@ -1484,72 +1427,6 @@ const CandidatProfilePage = () => {
 
         <TabPanel value={selectedTab} index={2}>
           <Box sx={{ p: 3 }}>
-            {documents.length === 0 ? (
-              <Typography color="text.secondary">
-                Aucun document enregistré pour ce dossier.
-              </Typography>
-            ) : (
-              <Grid container spacing={2}>
-                {documents.map((doc) => {
-                  const typeLabel =
-                    LABEL_TYPE_DOCUMENT[doc.typeDocument] ??
-                    `Document (${doc.typeDocument})`;
-                  const statutLabel =
-                    LABEL_STATUT_DOCUMENT[doc.statutDocument] ?? "—";
-                  const recu = doc.statutDocument === StatutDocument.Recu;
-                  return (
-                    <Grid item xs={12} sm={6} md={3} key={doc.id}>
-                      <Card
-                        sx={{
-                          borderRadius: 2,
-                          textAlign: "center",
-                          p: 2,
-                          transition: "transform 0.2s",
-                          "&:hover": {
-                            transform: "translateY(-4px)",
-                            boxShadow: 4,
-                          },
-                        }}
-                      >
-                        <DocumentIcon
-                          sx={{
-                            fontSize: 50,
-                            color: recu ? "#4caf50" : "#ff9800",
-                          }}
-                        />
-                        <Typography
-                          variant="body1"
-                          fontWeight="medium"
-                          sx={{ mt: 1 }}
-                        >
-                          {typeLabel}
-                        </Typography>
-                        <Chip
-                          size="small"
-                          color={recu ? "success" : "warning"}
-                          label={statutLabel}
-                          sx={{ mt: 1 }}
-                        />
-                        {doc.dateReception ? (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block", mt: 1 }}
-                          >
-                            Reçu le: {formatDateTime(doc.dateReception)}
-                          </Typography>
-                        ) : null}
-                      </Card>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            )}
-          </Box>
-        </TabPanel>
-
-        <TabPanel value={selectedTab} index={3}>
-          <Box sx={{ p: 3 }}>
             {contratActif?.id ? (
               <PaiementSection contratId={contratActif.id} />
             ) : (
@@ -1560,7 +1437,7 @@ const CandidatProfilePage = () => {
           </Box>
         </TabPanel>
 
-        <TabPanel value={selectedTab} index={4}>
+        <TabPanel value={selectedTab} index={3}>
           <Box sx={{ p: 3 }}>
             {/* Information sur le type de formation */}
             <Alert severity="info" sx={{ mb: 3 }}>
@@ -1590,55 +1467,18 @@ const CandidatProfilePage = () => {
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                justifyContent: "flex-end",
                 mb: 3,
-                flexWrap: "wrap",
-                gap: 1,
               }}
             >
-              <Typography variant="h6">Programmer un examen</Typography>
-              <Stack direction="row" spacing={1}>
-                {contratActif?.typeFormation !== 1 && (
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<AddIcon />}
-                    onClick={() => {
-                      setSelectedExamenType("Code");
-                      setExamenFormOpen(true);
-                    }}
-                  >
-                    Code
-                  </Button>
-                )}
-                {contratActif?.typeFormation !== 0 && (
-                  <>
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      startIcon={<AddIcon />}
-                      onClick={() => {
-                        setSelectedExamenType("Circulation");
-                        setExamenFormOpen(true);
-                      }}
-                    >
-                      Circulation
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="info"
-                      startIcon={<AddIcon />}
-                      onClick={() => {
-                        setSelectedExamenType("Manœuvre");
-                        setExamenFormOpen(true);
-                      }}
-                    >
-                      Manœuvre
-                    </Button>
-                  </>
-                )}
-              </Stack>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={() => setExamenFormOpen(true)}
+              >
+                Programmer un examen
+              </Button>
             </Box>
 
             <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
@@ -1663,6 +1503,7 @@ const CandidatProfilePage = () => {
               onDownloadPdf={telechargerConvocation}
               onReport={handleOpenReportForm}
               onResult={handleOpenResultatForm}
+              showReport={false}
             />
           </Box>
         </TabPanel>
@@ -1713,9 +1554,9 @@ const CandidatProfilePage = () => {
         open={examenFormOpen}
         onClose={() => setExamenFormOpen(false)}
         onSave={handleProgrammerExamen}
-        contratId={profile.contrats?.[0]?.id}
+        contratId={profile.contrat?.id}
         typeExamen={selectedExamenType}
-        contratActif={profile?.contrats?.[0]}
+        contratActif={profile?.contrat}
       />
 
       <ResultatExamenForm

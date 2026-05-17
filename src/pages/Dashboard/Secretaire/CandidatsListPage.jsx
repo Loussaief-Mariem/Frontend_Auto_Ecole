@@ -50,13 +50,6 @@ const ETAT_COMPTE = {
   3: { label: "Archivé", color: "default" },
 };
 
-const ETAT_DOSSIER = {
-  0: { label: "Incomplet", color: "warning" },
-  1: { label: "Complet", color: "success" },
-  2: { label: "Annulé", color: "error" },
-  3: { label: "Clôturé", color: "info" },
-};
-
 const CandidatsListPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth(); // Récupération de l'utilisateur connecté
@@ -82,14 +75,6 @@ const CandidatsListPage = () => {
 
   const getStatusChip = (etat) => {
     const config = ETAT_CANDIDAT[etat] || {
-      label: "Inconnu",
-      color: "default",
-    };
-    return <Chip size="small" color={config.color} label={config.label} />;
-  };
-
-  const getDossierChip = (etatDossier) => {
-    const config = ETAT_DOSSIER[etatDossier] || {
       label: "Inconnu",
       color: "default",
     };
@@ -286,7 +271,6 @@ const CandidatsListPage = () => {
                 <TableCell>CIN</TableCell>
                 <TableCell>Contact</TableCell>
                 <TableCell>Date d'inscription</TableCell>
-                <TableCell>Statut dossier</TableCell>
                 <TableCell>Statut compte</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
@@ -294,7 +278,7 @@ const CandidatsListPage = () => {
             <TableBody>
               {filteredCandidats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={6} align="center">
                     <Typography
                       variant="body2"
                       color="text.secondary"
@@ -339,9 +323,6 @@ const CandidatsListPage = () => {
                             candidat.dateInscription,
                           ).toLocaleDateString()
                         : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      {getDossierChip(candidat.dossier?.etatDossier)}
                     </TableCell>
                     <TableCell>
                       <Chip

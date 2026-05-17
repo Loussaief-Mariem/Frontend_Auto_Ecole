@@ -105,41 +105,21 @@ const Topbar = ({ onToggleSidebar }) => {
           </Box>
         </Stack>
 
-        <TextField
-          size="small"
-          placeholder="Rechercher..."
-          sx={{
-            width: { xs: 150, sm: 240, md: 300 },
-            mx: { xs: 1, sm: 2 },
-            display: { xs: "none", sm: "block" },
-            "& .MuiOutlinedInput-root": {
-              bgcolor: "background.paper",
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchRoundedIcon fontSize="small" color="primary" />
-              </InputAdornment>
-            ),
-          }}
-        />
+
 
         <Stack direction="row" spacing={1} alignItems="center">
-          <Tooltip title="Notifications">
-            <IconButton color="primary">
-              <NotificationsNoneRoundedIcon />
-            </IconButton>
-          </Tooltip>
 
-          <Tooltip title="Profil">
-            <IconButton
-              color="primary"
-              onClick={handleProfileClick}
-            >
-              <PersonRoundedIcon />
-            </IconButton>
-          </Tooltip>
+
+          {user?.role !== "Candidat" && (
+            <Tooltip title="Profil">
+              <IconButton
+                color="primary"
+                onClick={handleProfileClick}
+              >
+                <PersonRoundedIcon />
+              </IconButton>
+            </Tooltip>
+          )}
 
           <Tooltip title="Paramètres">
             <IconButton color="primary" onClick={handleOpenMenu}>
@@ -164,12 +144,14 @@ const Topbar = ({ onToggleSidebar }) => {
           open={Boolean(anchorEl)}
           onClose={handleCloseMenu}
         >
-          <MenuItem
-            onClick={handleProfileClick}
-          >
-            <PersonRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
-            Mon profil
-          </MenuItem>
+          {user?.role !== "Candidat" && (
+            <MenuItem
+              onClick={handleProfileClick}
+            >
+              <PersonRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
+              Mon profil
+            </MenuItem>
+          )}
 
           {user?.role === "Proprietaire" && [
             <MenuItem

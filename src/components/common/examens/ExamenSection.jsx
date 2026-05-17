@@ -24,6 +24,8 @@ import { fr } from "date-fns/locale";
 import { TypeExamen } from "../../../enums/index"; // Ajout de l'import
 
 const ExamenForm = ({ open, onClose, onSave, contratId, typeExamen }) => {
+  console.log("contratId", contratId);
+  console.log("typeExamen", typeExamen);
   const [formData, setFormData] = useState({
     contratId: contratId,
     typeExamen:
