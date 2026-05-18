@@ -573,244 +573,204 @@ console.log("profile", profile)
   );
 
   // Composant pour l'onglet des séances
-  const SeancesTabPanel = () => (
-    <Box sx={{ p: 3 }}>
-      {seancesData.length === 0 ? (
-        <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-          Aucune séance de code planifiée pour ce candidat.
-        </Typography>
-      ) : (
-        <TableContainer
-          component={Paper}
-          variant="outlined"
-          sx={{ borderRadius: 2, overflowX: "auto" }}
-        >
-          <Table>
-            <TableHead sx={{ bgcolor: "#f5f5f5" }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Horaire</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Durée</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Thème</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Montant</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Statut</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Présence</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600 }}>
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {seancesData.map((seance) => (
-                <TableRow
-                  key={seance.id}
-                  hover
-                  sx={{
-                    bgcolor: seance.estAnnulee
-                      ? alpha(theme.palette.error.main, 0.05)
-                      : "inherit",
-                    opacity: seance.estAnnulee ? 0.7 : 1,
-                  }}
-                >
-                  <TableCell>
-                    {editingSeanceId === seance.id ? (
-                      <TextField
-                        type="date"
-                        value={editedSeance.dateSeance?.split("T")[0] || ""}
-                        onChange={(e) =>
-                          setEditedSeance({
-                            ...editedSeance,
-                            dateSeance: e.target.value,
-                          })
-                        }
-                        size="small"
-                      />
-                    ) : (
-                      formatDateCalendar(seance.dateSeance)
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingSeanceId === seance.id ? (
-                      <TextField
-                        type="time"
-                        value={editedSeance.heureDebut || "09:00"}
-                        onChange={(e) =>
-                          setEditedSeance({
-                            ...editedSeance,
-                            heureDebut: e.target.value,
-                          })
-                        }
-                        size="small"
-                      />
-                    ) : (
-                      seance.heureDebut?.substring(0, 5) || "—"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingSeanceId === seance.id ? (
-                      <TextField
-                        type="number"
-                        value={editedSeance.nombreHeures}
-                        onChange={(e) =>
-                          setEditedSeance({
-                            ...editedSeance,
-                            nombreHeures: parseFloat(e.target.value),
-                            dureeMinutes: parseFloat(e.target.value) * 60,
-                            montant: parseFloat(e.target.value) * 40,
-                          })
-                        }
-                        size="small"
-                        sx={{ width: 80 }}
-                        inputProps={{ step: 0.5 }}
-                      />
-                    ) : (
-                      <Chip
-                        label={`${seance.nombreHeures}h`}
-                        size="small"
-                        variant="outlined"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingSeanceId === seance.id ? (
-                      <TextField
-                        value={editedSeance.theme}
-                        onChange={(e) =>
-                          setEditedSeance({
-                            ...editedSeance,
-                            theme: e.target.value,
-                          })
-                        }
-                        size="small"
-                      />
-                    ) : (
-                      seance.theme || "—"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {seance.montant} DT
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {seance.estAnnulee ? (
-                      <Chip size="small" color="error" label="Annulée" />
-                    ) : (
-                      <Chip
-                        size="small"
-                        color={seance.present ? "success" : "warning"}
-                        label={seance.present ? "Effectuée" : "À venir"}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {!seance.estAnnulee && !seance.present && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="primary"
-                        onClick={() =>
-                          handleTogglePresence(seance.id, seance.present)
-                        }
-                        disabled={updatingPresence[seance.id]}
-                        startIcon={
-                          updatingPresence[seance.id] ? (
-                            <CircularProgress size={16} />
-                          ) : (
-                            <CheckCircleIcon />
-                          )
-                        }
-                      >
-                        Marquer présence
-                      </Button>
-                    )}
-                    {seance.present && (
-                      <Chip
-                        size="small"
-                        color="success"
-                        icon={<CheckCircleIcon />}
-                        label="Présent"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      justifyContent="center"
-                    >
-                      {editingSeanceId === seance.id ? (
-                        <>
-                          <IconButton
-                            size="small"
-                            onClick={handleSaveSeance}
-                            color="primary"
-                          >
-                            <SaveIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditingSeanceId(null)}
-                            color="error"
-                          >
-                            <CloseIcon />
-                          </IconButton>
-                        </>
-                      ) : (
-                        <>
-                          {(userRole === "secretaire" ||
-                            userRole === "moniteur" ||
-                            userRole === "admin") && (
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditSeance(seance)}
-                              disabled={seance.estAnnulee}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          )}
+  const SeancesTabPanel = () => {
+    const seancesConduite = profile?.seancesConduite ?? [];
+    const hasCode = seancesData.length > 0;
+    const hasConduite = seancesConduite.length > 0;
 
-                          {(userRole === "secretaire" ||
-                            userRole === "admin") &&
-                            (!seance.estAnnulee ? (
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCancelSeance(seance)}
-                                color="error"
-                                disabled={cancellingSeance[seance.id]}
-                              >
-                                {cancellingSeance[seance.id] ? (
-                                  <CircularProgress size={16} />
-                                ) : (
-                                  <CancelIcon />
-                                )}
-                              </IconButton>
-                            ) : (
-                              <IconButton
-                                size="small"
-                                onClick={() => handleRestoreSeance(seance.id)}
-                                color="success"
-                                disabled={cancellingSeance[seance.id]}
-                              >
-                                {cancellingSeance[seance.id] ? (
-                                  <CircularProgress size={16} />
-                                ) : (
-                                  <RestoreIcon />
-                                )}
-                              </IconButton>
-                            ))}
-                        </>
-                      )}
-                    </Stack>
-                  </TableCell>
+    const statutChip = (s) => {
+      if (s.estAnnulee) return <Chip size="small" color="default" label="Annulée" />;
+      if (s.present) return <Chip size="small" color="success" icon={<CheckCircleIcon />} label="Présent" />;
+      if (new Date(s.dateSeance ?? s.date) > new Date()) return <Chip size="small" color="info" label="Planifiée" />;
+      return <Chip size="small" color="error" label="Absent" />;
+    };
+
+    return (
+      <Box sx={{ p: 3 }}>
+        {/* ── SÉANCES DE CODE ── */}
+        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+          Séances de Code (Théoriques)
+        </Typography>
+        {!hasCode ? (
+          <Typography color="text.secondary" align="center" sx={{ py: 3, mb: 4 }}>
+            Aucune séance de code planifiée pour ce candidat.
+          </Typography>
+        ) : (
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            sx={{ borderRadius: 2, overflowX: "auto", mb: 5 }}
+          >
+            <Table size="small">
+              <TableHead sx={{ bgcolor: "#f5f5f5" }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Horaire</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Durée</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Thème</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Présence</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Note</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Commentaire du moniteur</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-    </Box>
-  );
+              </TableHead>
+              <TableBody>
+                {seancesData.map((seance) => {
+                  // Trouver la presence du candidat dans cette séance de code
+                  const rawSeance = (profile?.seancesCode ?? []).find(s => s.id === seance.id);
+                  const presence = rawSeance?.presences?.find(p => p.candidatId === parseInt(id));
+                  const note = presence?.noteProgression ?? "—";
+                  const remarque = presence?.remarquesPedagogiques || "—";
+
+                  return (
+                    <TableRow
+                      key={seance.id}
+                      hover
+                      sx={{
+                        bgcolor: seance.estAnnulee
+                          ? alpha(theme.palette.error.main, 0.05)
+                          : "inherit",
+                        opacity: seance.estAnnulee ? 0.7 : 1,
+                      }}
+                    >
+                      <TableCell>{formatDateCalendar(seance.dateSeance)}</TableCell>
+                      <TableCell>{seance.heureDebut?.substring(0, 5) || "—"}</TableCell>
+                      <TableCell>
+                        <Chip label={`${seance.dureeMinutes ?? seance.nombreHeures * 60} min`} size="small" variant="outlined" />
+                      </TableCell>
+                      <TableCell>{seance.theme || "—"}</TableCell>
+                      <TableCell>{statutChip({ ...seance, dateSeance: seance.dateSeance })}</TableCell>
+                      <TableCell>
+                        {note !== "—" ? (
+                          <Chip
+                            label={`${note}/10`}
+                            size="small"
+                            color={note >= 7 ? "success" : note >= 4 ? "warning" : "error"}
+                          />
+                        ) : <Typography variant="caption" color="text.secondary">—</Typography>}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 200 }}>
+                        <Typography variant="body2" color={remarque === "—" ? "text.disabled" : "text.primary"} sx={{ fontStyle: remarque === "—" ? "italic" : "normal" }}>
+                          {remarque}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {/* ── SÉANCES DE CONDUITE ── */}
+        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+          Séances de Conduite (Pratiques)
+        </Typography>
+        {!hasConduite ? (
+          <Typography color="text.secondary" align="center" sx={{ py: 3 }}>
+            Aucune séance de conduite planifiée pour ce candidat.
+          </Typography>
+        ) : (
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            sx={{ borderRadius: 2, overflowX: "auto" }}
+          >
+            <Table size="small">
+              <TableHead sx={{ bgcolor: "#f5f5f5" }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Horaire</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Durée</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Présence</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Note progression</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Remarques pédagogiques</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {seancesConduite
+                  .slice()
+                  .sort((a, b) => new Date(a.date) - new Date(b.date))
+                  .map((s) => {
+                    const heureDebut = s.heureDebut
+                      ? String(s.heureDebut).substring(0, 5)
+                      : "—";
+                    const heureFin = s.heureDebut
+                      ? (() => {
+                          const [h, m] = String(s.heureDebut).split(":").map(Number);
+                          const totalMin = h * 60 + m + (s.dureeMinutes || 0);
+                          return `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+                        })()
+                      : "—";
+                    const typeLabel =
+                      s.typeConduite === 1 ? "Circulation" : "Manœuvre";
+                    const note = s.noteProgression;
+                    const remarque = s.remarquesPedagogiques;
+
+                    const chipStatus = () => {
+                      if (s.estAnnulee) return <Chip size="small" color="default" label="Annulée" />;
+                      if (s.present) return <Chip size="small" color="success" icon={<CheckCircleIcon />} label="Présent" />;
+                      if (new Date(s.date) > new Date()) return <Chip size="small" color="info" label="Planifiée" />;
+                      return <Chip size="small" color="error" label="Absent" />;
+                    };
+
+                    return (
+                      <TableRow
+                        key={s.id}
+                        hover
+                        sx={{
+                          bgcolor: s.estAnnulee
+                            ? alpha(theme.palette.error.main, 0.05)
+                            : "inherit",
+                          opacity: s.estAnnulee ? 0.7 : 1,
+                        }}
+                      >
+                        <TableCell>{formatDateCalendar(s.date)}</TableCell>
+                        <TableCell>{heureDebut} — {heureFin}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={`${s.dureeMinutes ?? 0} min`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={typeLabel}
+                            size="small"
+                            color={s.typeConduite === 1 ? "primary" : "secondary"}
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>{chipStatus()}</TableCell>
+                        <TableCell>
+                          {note != null ? (
+                            <Chip
+                              label={`${note}/10`}
+                              size="small"
+                              color={note >= 7 ? "success" : note >= 4 ? "warning" : "error"}
+                            />
+                          ) : <Typography variant="caption" color="text.secondary">—</Typography>}
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 200 }}>
+                          <Typography
+                            variant="body2"
+                            color={!remarque ? "text.disabled" : "text.primary"}
+                            sx={{ fontStyle: !remarque ? "italic" : "normal" }}
+                          >
+                            {remarque || "—"}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
+    );
+  };
 
   if (loading) {
     return (
@@ -854,6 +814,15 @@ console.log("profile", profile)
     ? candidatPlaceholder
     : resolveCandidatPhotoSrc(photoPathRaw, candidatPlaceholder);
 
+  const dateObtentionCodeRaw = profile?.contrat?.dateObtentionCode ?? null;
+  const dateExpirationCodeStr = dateObtentionCodeRaw
+    ? (() => {
+        const d = new Date(dateObtentionCodeRaw);
+        d.setMonth(d.getMonth() + 15);
+        return formatDateCalendar(d.toISOString());
+      })()
+    : "—";
+
   const identiteItems = [
     {
       label: "Nom complet",
@@ -880,6 +849,16 @@ console.log("profile", profile)
       label: "Lieu de naissance",
       value: profile.lieuDeNaissance || "—",
       icon: LocationIcon,
+    },
+    {
+      label: "Date d'obtention code",
+      value: formatDateCalendar(dateObtentionCodeRaw),
+      icon: CalendarIcon,
+    },
+    {
+      label: "Date d'expiration code",
+      value: dateExpirationCodeStr,
+      icon: CalendarIcon,
     },
   ];
 
@@ -1427,11 +1406,14 @@ console.log("profile", profile)
 
         <TabPanel value={selectedTab} index={2}>
           <Box sx={{ p: 3 }}>
-            {contratActif?.id ? (
-              <PaiementSection contratId={contratActif.id} />
+            {profile?.tousLesContrats && profile.tousLesContrats.length > 0 ? (
+              <PaiementSection
+                tousContrats={profile.tousLesContrats}
+                onPaiementAdded={refreshData}
+              />
             ) : (
               <Alert severity="info">
-                Aucun contrat actif trouvé pour ce candidat.
+                Aucun contrat trouvé pour ce candidat.
               </Alert>
             )}
           </Box>

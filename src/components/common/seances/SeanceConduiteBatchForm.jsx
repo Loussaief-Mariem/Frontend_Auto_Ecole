@@ -256,8 +256,8 @@ const SeanceConduiteBatchForm = ({
                       }
                     >
                       {candidats.map((candidat) => (
-                        <MenuItem key={candidat.id} value={candidat.id.toString()}>
-                          {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
+                        <MenuItem key={candidat?.id} value={candidat?.id?.toString() || ""}>
+                          {candidat?.prenom} {candidat?.nom} - {candidat?.numeroCIN}
                         </MenuItem>
                       ))}
                     </Select>
@@ -274,8 +274,8 @@ const SeanceConduiteBatchForm = ({
                       }
                     >
                       {moniteurs.map((moniteur) => (
-                        <MenuItem key={moniteur.id} value={moniteur.id.toString()}>
-                          {moniteur.prenom} {moniteur.nom}
+                        <MenuItem key={moniteur?.id} value={moniteur?.id?.toString() || ""}>
+                          {moniteur?.prenom} {moniteur?.nom}
                         </MenuItem>
                       ))}
                     </Select>

@@ -1,6 +1,12 @@
 // src/api/contratService.js
 import api from "./axios";
 
+// 🔹 Créer un contrat
+export const createContrat = async (data) => {
+  const response = await api.post("/contrats", data);
+  return response.data;
+};
+
 // 🔹 Télécharger le contrat PDF
 export const getContratPdf = async (id) => {
   const response = await api.get(`/Contrats/${id}/pdf`, {

@@ -26,7 +26,7 @@ import CompteForm from "./CompteForm";
 import useCandidatForm from "../../../hooks/useCandidatForm";
 import { getMoniteursByAutoEcole } from "../../../api/moniteurService";
 
-const CandidatForm = ({ errMessage, setErrMessage }) => {
+const CandidatForm = ({ errMessage, setErrMessage, onSuccess }) => {
   const {
     formData,
     handleChange,
@@ -38,7 +38,7 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
     loading,
     fieldErrors,
     clearFieldError,
-  } = useCandidatForm({ setErrMessage });
+  } = useCandidatForm({ setErrMessage, onSuccess });
   const [moniteurs, setMoniteurs] = useState([]);
   const typePermisList = ["A", "AA", "B", "BE", "C", "CE", "D", "DE", "G", "H"];
   console.log("Form data in CandidatForm:", formData);
@@ -319,79 +319,10 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
               </FormHelperText>
             </FormControl>
 
-            <Divider />
 
-            {/* Documents */}
-            <Typography variant="h6" fontWeight="medium" color="text.secondary">
-              Documents du dossier
-            </Typography>
-            <FormGroup row>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={documentsState.photoIdentite}
-                    onChange={(e) =>
-                      setDocumentChecked("photoIdentite", e.target.checked)
-                    }
-                  />
-                }
-                label="Photo d'identité"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={documentsState.copieCIN}
-                    onChange={(e) =>
-                      setDocumentChecked("copieCIN", e.target.checked)
-                    }
-                  />
-                }
-                label="Copie CIN"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={documentsState.certificatMedical}
-                    onChange={(e) =>
-                      setDocumentChecked("certificatMedical", e.target.checked)
-                    }
-                  />
-                }
-                label="Certificat médical"
-              />
-            </FormGroup>
-
-            <Divider />
 
             {/* Formation & Permis */}
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <FormControl
-                  fullWidth
-                  size="medium"
-                  error={!!fieldErrors.typePermisCode}
-                >
-                  <InputLabel>Type de permis</InputLabel>
-                  <Select
-                    name="typePermisCode"
-                    value={formData.typePermisCode}
-                    onChange={handleChange}
-                    label="Type de permis"
-                    sx={selectInputSx}
-                  >
-                    {typePermisList.map((typePermis) => (
-                      <MenuItem key={typePermis} value={typePermis}>
-                        {typePermis}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {fieldErrors.typePermisCode ? (
-                    <FormHelperText>
-                      {fieldErrors.typePermisCode}
-                    </FormHelperText>
-                  ) : null}
-                </FormControl>
-              </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl
                   fullWidth
@@ -440,6 +371,28 @@ const CandidatForm = ({ errMessage, setErrMessage }) => {
                     <FormHelperText>{fieldErrors.typeFormation}</FormHelperText>
                   ) : null}
                 </FormControl>
+              </Grid>
+
+              {/* Champ Date d'obtention de code (toujours affiché, obligatoire si Pratique) */}
+              <Grid item xs={12} sm={6}>
+                <DatePicker
+                  label="Date d'obtention du code"
+                  value={formData.dateObtentionCode}
+                  onChange={(date) =>
+                    handleChange({
+                      target: { name: "dateObtentionCode", value: date },
+                    })
+                  }
+                  sx={{ width: "100%" }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: formData.typeFormation === 1,
+                      error: !!fieldErrors.dateObtentionCode,
+                      helperText: fieldErrors.dateObtentionCode || "Requis pour la formation pratique",
+                    },
+                  }}
+                />
               </Grid>
             </Grid>
 

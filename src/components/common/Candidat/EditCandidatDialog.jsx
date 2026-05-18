@@ -656,36 +656,6 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
               </Grid>
             </Box>
 
-            {/* Documents du dossier */}
-            <Box>
-              <Typography variant="h6" gutterBottom color="primary">
-                Documents du dossier
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                Cochez les pièces déjà reçues (sinon elles restent « manquantes »).
-              </Typography>
-              <Stack spacing={0.5}>
-                {DOCUMENT_TYPES.map((type) => (
-                  <FormControlLabel
-                    key={type}
-                    control={
-                      <Checkbox
-                        checked={
-                          formData.documentChecks?.[type]?.recu ?? false
-                        }
-                        onChange={(e) =>
-                          handleDocumentRecuChange(type, e.target.checked)
-                        }
-                        size="small"
-                      />
-                    }
-                    label={DOCUMENT_TYPE_LABELS[type]}
-                  />
-                ))}
-              </Stack>
-            </Box>
-
             {/* Formation & Permis */}
             <Box>
               <Typography variant="h6" gutterBottom color="primary">
@@ -694,21 +664,14 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
               <Divider sx={{ mb: 2 }} />
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Type de permis</InputLabel>
-                    <Select
-                      name="typePermisCode"
-                      value={formData.typePermisCode}
-                      onChange={handleChange}
-                      label="Type de permis"
-                    >
-                      {typePermisList.map((type) => (
-                        <MenuItem key={type} value={type}>
-                          {type}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    label="Type de permis"
+                    name="typePermisCode"
+                    value={formData.typePermisCode || "B"}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    size="small"
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">

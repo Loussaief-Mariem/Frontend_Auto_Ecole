@@ -18,31 +18,33 @@ const StatCard = ({ title, value, icon, color }) => (
   <Paper
     elevation={0}
     sx={{
-      p: 3,
+      p: 2.5,
       borderRadius: 4,
       bgcolor: "background.paper",
       border: "1px solid",
       borderColor: "divider",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
       display: "flex",
       alignItems: "center",
       gap: 2,
+      width: "100%",
     }}
   >
     <Avatar
       sx={{
         bgcolor: `${color}15`,
         color: color,
-        width: 56,
-        height: 56,
+        width: 48,
+        height: 48,
       }}
     >
       {icon}
     </Avatar>
     <Box>
-      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+      <Typography variant="body2" color="text.secondary" fontWeight={600}>
         {title}
       </Typography>
-      <Typography variant="h5" fontWeight={700}>
+      <Typography variant="h5" fontWeight={800}>
         {value}
       </Typography>
     </Box>
@@ -62,30 +64,32 @@ const ProfileCard = ({ profile }) => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: { xs: 2.5, md: 3 },
         borderRadius: 4,
         bgcolor: "background.paper",
         border: "1px solid",
         borderColor: "divider",
-        height: "100%",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+        width: "100%",
       }}
     >
-      <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems="center" mb={3}>
         <Avatar
           src={photoUrl}
           sx={{
-            width: 64,
-            height: 64,
+            width: 72,
+            height: 72,
             bgcolor: "primary.main",
+            boxShadow: "0 4px 12px rgba(25, 118, 210, 0.15)",
           }}
         >
-          {!photoUrl && <PersonOutlineOutlinedIcon sx={{ fontSize: 32 }} />}
+          {!photoUrl && <PersonOutlineOutlinedIcon sx={{ fontSize: 36 }} />}
         </Avatar>
-        <Box>
-          <Typography variant="h6" fontWeight={700}>
+        <Box sx={{ textAlign: { xs: "center", sm: "left" } }}>
+          <Typography variant="h5" fontWeight={800}>
             {profile.prenom} {profile.nom}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="primary.main" fontWeight={600}>
             Candidat
           </Typography>
         </Box>
@@ -93,59 +97,70 @@ const ProfileCard = ({ profile }) => {
       
       <Divider sx={{ my: 2 }} />
       
-      <Stack spacing={1.5}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <BadgeOutlinedIcon fontSize="small" color="action" />
-          <Typography variant="body2">
-            N° CIN: <strong>{profile.numeroCIN || "Non défini"}</strong>
-          </Typography>
-        </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <EmailOutlinedIcon fontSize="small" color="action" />
-          <Typography variant="body2">
-            {profile.compte?.login || "Non défini"}
-          </Typography>
-        </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <PhoneOutlinedIcon fontSize="small" color="action" />
-          <Typography variant="body2">
-            {profile.telephone || "Non défini"}
-          </Typography>
-        </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <LocationOnOutlinedIcon fontSize="small" color="action" />
-          <Typography variant="body2" noWrap>
-            {profile.adresse || "Non définie"}
-          </Typography>
-        </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <CalendarMonthOutlinedIcon fontSize="small" color="action" />
-          <Typography variant="body2">
-            Né(e) le: {profile.dateNaissance ? new Date(profile.dateNaissance).toLocaleDateString("fr-FR") : "N/A"}
-          </Typography>
-        </Stack>
-      </Stack>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <BadgeOutlinedIcon fontSize="small" color="primary" />
+            <Typography variant="body2" color="text.secondary">
+              N° CIN: <strong style={{ color: "var(--mui-palette-text-primary)" }}>{profile.numeroCIN || "Non défini"}</strong>
+            </Typography>
+          </Stack>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <EmailOutlinedIcon fontSize="small" color="primary" />
+            <Typography variant="body2" color="text.secondary">
+              Email : <strong style={{ color: "var(--mui-palette-text-primary)" }}>{profile.compte?.login || "Non défini"}</strong>
+            </Typography>
+          </Stack>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <PhoneOutlinedIcon fontSize="small" color="primary" />
+            <Typography variant="body2" color="text.secondary">
+              Tél: <strong style={{ color: "var(--mui-palette-text-primary)" }}>{profile.telephone || "Non défini"}</strong>
+            </Typography>
+          </Stack>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <LocationOnOutlinedIcon fontSize="small" color="primary" />
+            <Typography variant="body2" color="text.secondary" noWrap>
+              Adresse: <strong style={{ color: "var(--mui-palette-text-primary)" }}>{profile.adresse || "Non définie"}</strong>
+            </Typography>
+          </Stack>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <CalendarMonthOutlinedIcon fontSize="small" color="primary" />
+            <Typography variant="body2" color="text.secondary">
+              Né(e) le: <strong style={{ color: "var(--mui-palette-text-primary)" }}>{profile.dateNaissance ? new Date(profile.dateNaissance).toLocaleDateString("fr-FR") : "N/A"}</strong>
+            </Typography>
+          </Stack>
+        </Grid>
+      </Grid>
     </Paper>
   );
 };
 
-// Composant pour afficher la liste des examens
 const ExamensSection = ({ examens }) => {
   if (!examens || examens.length === 0) {
     return (
       <Paper
         elevation={0}
         sx={{
-          p: 3,
+          p: 4,
           borderRadius: 4,
           bgcolor: "background.paper",
           border: "1px solid",
           borderColor: "divider",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
           textAlign: "center",
+          width: "100%",
         }}
       >
         <EventOutlinedIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" color="text.secondary" fontWeight={600}>
           Aucun examen programmé pour le moment.
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -159,16 +174,18 @@ const ExamensSection = ({ examens }) => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: { xs: 2.5, md: 3 },
         borderRadius: 4,
         bgcolor: "background.paper",
         border: "1px solid",
         borderColor: "divider",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+        width: "100%",
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3 }}>
         <EventOutlinedIcon color="primary" />
-        <Typography variant="h6" fontWeight={700}>
+        <Typography variant="h6" fontWeight={800}>
           Examens programmés
         </Typography>
       </Stack>
@@ -179,10 +196,9 @@ const ExamensSection = ({ examens }) => {
             <Paper
               elevation={0}
               sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: alpha => alpha.palette.primary.main,
-                background: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)",
+                p: 2.5,
+                borderRadius: 3,
+                background: "linear-gradient(135deg, rgba(25, 118, 210, 0.04) 0%, rgba(25, 118, 210, 0.01) 100%)",
                 border: "1px solid",
                 borderColor: "divider",
               }}
@@ -196,7 +212,7 @@ const ExamensSection = ({ examens }) => {
                     <Typography variant="subtitle1" fontWeight={700}>
                       {examen.type || "Examen de conduite"}
                     </Typography>
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                       <Typography variant="caption" color="text.secondary">
                         {examen.description || "Épreuve pratique"}
                       </Typography>
@@ -209,10 +225,10 @@ const ExamensSection = ({ examens }) => {
                   </Box>
                 </Stack>
                 
-                <Stack direction="row" spacing={3} alignItems="center">
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "flex-start", sm: "center" }}>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <CalendarMonthOutlinedIcon fontSize="small" color="action" />
-                    <Typography variant="body2">
+                    <CalendarMonthOutlinedIcon fontSize="small" color="primary" />
+                    <Typography variant="body2" fontWeight={600}>
                       {new Date(examen.date).toLocaleDateString("fr-FR", {
                         day: "2-digit",
                         month: "long",
@@ -222,16 +238,14 @@ const ExamensSection = ({ examens }) => {
                   </Stack>
                   
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <ScheduleOutlinedIcon fontSize="small" color="action" />
-                    <Typography variant="body2">
+                    <ScheduleOutlinedIcon fontSize="small" color="primary" />
+                    <Typography variant="body2" fontWeight={600}>
                       {new Date(examen.date).toLocaleTimeString("fr-FR", {
                         hour: "2-digit",
                         minute: "2-digit"
                       })}
                     </Typography>
                   </Stack>
-                  
-
                 </Stack>
               </Stack>
             </Paper>
@@ -251,7 +265,7 @@ const HomeCandidat = () => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <Typography>Chargement de votre profil...</Typography>
+        <Typography fontWeight={600}>Chargement de votre profil...</Typography>
       </Box>
     );
   }
@@ -268,7 +282,7 @@ const HomeCandidat = () => {
   ).length || 0;
   const seancesAVenir = seancesAVenirRaw > 0 ? seancesAVenirRaw : 1;
   
-  // Données d'exemple pour les examens - À remplacer par les vraies données de l'API
+  // Données d'exemple pour les examens
   const examensProgrammes = [
     {
       id: 1,
@@ -280,7 +294,8 @@ const HomeCandidat = () => {
   ];
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 800, mx: "auto", width: "100%" }}>
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={800} color="text.primary" gutterBottom>
           Bonjour, {profile?.prenom || firstName} 
@@ -291,102 +306,98 @@ const HomeCandidat = () => {
         <DashboardUserMeta />
       </Box>
 
-      <Grid container spacing={3}>
-        {/* Carte de profil */}
-        <Grid item xs={12} md={4}>
-          <ProfileCard profile={profile} />
-        </Grid>
-        
-        {/* Statistiques */}
-        <Grid item xs={12} md={8}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={4}>
-              <StatCard
-                title="Séances à venir"
-                value={`${seancesAVenir} Séance${seancesAVenir > 1 ? 's' : ''}`}
-                icon={<CalendarMonthOutlinedIcon fontSize="large" />}
-                color="#2196f3"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <StatCard
-                title="Heures de conduite"
-                value={`${heuresConduiteEffectuees} h `}
-                icon={<AccessTimeOutlinedIcon fontSize="large" />}
-                color="#4caf50"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <StatCard
-                title="Heures de code"
-                value={`${seancesCodeEffectuees} h `}
-                icon={<AssignmentOutlinedIcon fontSize="large" />}
-                color="#ff9800"
-              />
-            </Grid>
+      {/* Vertical Stack Layout */}
+      <Stack spacing={3}>
+        {/* Profile Card */}
+        <ProfileCard profile={profile} />
+
+        {/* Stats Grid */}
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Séances à venir"
+              value={`${seancesAVenir} Séance${seancesAVenir > 1 ? 's' : ''}`}
+              icon={<CalendarMonthOutlinedIcon fontSize="large" />}
+              color="#2196f3"
+            />
           </Grid>
-
-          {/* Informations supplémentaires sur le contrat */}
-          {profile?.contrat && (
-            <Paper
-              elevation={0}
-              sx={{
-                mt: 3,
-                p: 2,
-                borderRadius: 2,
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Informations du contrat
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" color="text.secondary">
-                    Type de permis
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    Permis {profile.contrat.typePermisCode}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" color="text.secondary">
-                    Type de formation
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {profile.contrat.typeFormation === 0 && "Théorique"}
-                    {profile.contrat.typeFormation === 1 && "Pratique"}
-                    {profile.contrat.typeFormation === 2 && "Complet"}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" color="text.secondary">
-                    Auto-école
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {profile.contrat.autoEcole?.nom || "N/A"}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" color="text.secondary">
-                    Date d'inscription
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {profile.contrat.dateInscription ? new Date(profile.contrat.dateInscription).toLocaleDateString("fr-FR") : "N/A"}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          )}
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Heures de conduite"
+              value={`${heuresConduiteEffectuees} h `}
+              icon={<AccessTimeOutlinedIcon fontSize="large" />}
+              color="#4caf50"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Heures de code"
+              value={`${seancesCodeEffectuees} h `}
+              icon={<AssignmentOutlinedIcon fontSize="large" />}
+              color="#ff9800"
+            />
+          </Grid>
         </Grid>
-      </Grid>
 
-      {/* Section des examens programmés */}
-      <Box sx={{ mt: 4 }}>
+        {/* Contract Info Card */}
+        {profile?.contrat && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              bgcolor: "background.paper",
+              border: "1px solid",
+              borderColor: "divider",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+              width: "100%",
+            }}
+          >
+            <Typography variant="subtitle2" color="text.secondary" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+              Informations du contrat
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6} sm={3}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Type de permis
+                </Typography>
+                <Typography variant="body2" fontWeight={800} color="primary.main">
+                  Permis {profile.contrat.typePermisCode}
+                </Typography>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Type de formation
+                </Typography>
+                <Typography variant="body2" fontWeight={700}>
+                  {profile.contrat.typeFormation === 0 && "Théorique"}
+                  {profile.contrat.typeFormation === 1 && "Pratique"}
+                  {profile.contrat.typeFormation === 2 && "Complet"}
+                </Typography>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Auto-école
+                </Typography>
+                <Typography variant="body2" fontWeight={700}>
+                  {profile.contrat.autoEcole?.nom || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Date d'inscription
+                </Typography>
+                <Typography variant="body2" fontWeight={700}>
+                  {profile.contrat.dateInscription ? new Date(profile.contrat.dateInscription).toLocaleDateString("fr-FR") : "N/A"}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+        )}
+
+        {/* Scheduled Exams */}
         <ExamensSection examens={examensProgrammes} />
-      </Box>
+      </Stack>
     </Box>
   );
 };

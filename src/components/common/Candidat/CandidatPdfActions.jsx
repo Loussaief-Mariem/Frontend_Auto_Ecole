@@ -45,7 +45,9 @@ const CandidatPdfActions = ({ candidatId, contratId, forHeader = false }) => {
     if (candidatId == null || candidatId === "") return;
     setLoadingFiche(true);
     try {
-      const blob = await getCandidatFichePdf(candidatId);
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const autoEcoleId = storedUser.autoEcoleId;
+      const blob = await getCandidatFichePdf(candidatId, autoEcoleId);
       triggerBlobDownload(blob, `fiche_candidat_${candidatId}.pdf`);
     } catch (error) {
       console.error("Erreur téléchargement fiche PDF", error);

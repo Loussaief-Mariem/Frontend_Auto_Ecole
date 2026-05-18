@@ -272,6 +272,22 @@ const testService = {
             console.error('Erreur reactiverQuestion:', error.response?.data || error.message);
             throw error;
         }
+    },
+
+    async uploadQuestionImage(file) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await apiClient.post('/questions/upload-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Erreur uploadQuestionImage:', error.response?.data || error.message);
+            throw error;
+        }
     }
 };
 

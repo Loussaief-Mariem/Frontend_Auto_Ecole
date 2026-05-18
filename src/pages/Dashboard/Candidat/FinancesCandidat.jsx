@@ -41,7 +41,6 @@ import CarRentalOutlinedIcon from "@mui/icons-material/CarRentalOutlined";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
-import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import { useAuth } from "../../../context/AuthContext";
 import { useCandidat } from "../../../hooks/useCandidat";
 
@@ -237,7 +236,7 @@ const FinancesCandidat = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: "0 auto", p: { xs: 2, md: 4 } }}>
+    <Box sx={{ maxWidth: 800, margin: "0 auto", width: "100%" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
           <Typography variant="h4" fontWeight={800} color="text.primary" gutterBottom>
@@ -267,356 +266,338 @@ const FinancesCandidat = () => {
         }}
       >
         <Tab icon={<AccountBalanceWalletOutlinedIcon />} iconPosition="start" label="Contrat actif" />
-        <Tab icon={<HistoryOutlinedIcon />} iconPosition="start" label="Historique des contrats" />
+        <Tab icon={<HistoryOutlinedIcon />} iconPosition="start" label="Historique" />
       </Tabs>
 
       {/* ONGLET 1: CONTRAT ACTIF */}
       {tabValue === 0 && (
-        <Grid container spacing={3}>
+        <Stack spacing={3}>
           {contratActif ? (
             <>
               {contratActif.estSolde && (
-                <Grid item xs={12}>
-                  <Alert 
-                    icon={<CheckCircleOutlineIcon fontSize="inherit" />} 
-                    severity="success"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    Votre contrat est intégralement soldé.
-                  </Alert>
-                </Grid>
+                <Alert 
+                  icon={<CheckCircleOutlineIcon fontSize="inherit" />} 
+                  severity="success"
+                  sx={{ borderRadius: 3, fontWeight: 600 }}
+                >
+                  Votre contrat est intégralement soldé.
+                </Alert>
               )}
 
               {contratActif.dateExpirationCode && isCodeExpired(contratActif.dateExpirationCode) && (
-                <Grid item xs={12}>
-                  <Alert 
-                    icon={<WarningAmberOutlinedIcon fontSize="inherit" />} 
-                    severity="warning"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    Attention: Votre code a expiré le {formatDate(contratActif.dateExpirationCode)}. Veuillez contacter votre auto-école.
-                  </Alert>
-                </Grid>
+                <Alert 
+                  icon={<WarningAmberOutlinedIcon fontSize="inherit" />} 
+                  severity="warning"
+                  sx={{ borderRadius: 3, fontWeight: 600 }}
+                >
+                  Attention: Votre code a expiré le {formatDate(contratActif.dateExpirationCode)}. Veuillez contacter votre auto-école.
+                </Alert>
               )}
 
-              <Grid item xs={12}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    borderRadius: 3, 
-                    border: "1px solid", 
-                    borderColor: "divider",
-                    overflow: "visible"
-                  }}
-                >
-                  <CardContent sx={{ p: 0 }}>
-                    <Box sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.04) }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "white" }}>
-                            <BusinessOutlinedIcon />
-                          </Box>
-                          <Box>
-                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                              <Typography variant="h5" fontWeight={800}>
-                                Permis {contratActif.typePermisCode}
-                              </Typography>
-                              <Tooltip title={getTypeFormationInfo(contratActif.typeFormation).description}>
-                                <Chip
-                                  icon={getTypeFormationInfo(contratActif.typeFormation).icon}
-                                  label={getTypeFormationInfo(contratActif.typeFormation).label}
-                                  size="small"
-                                  color={getTypeFormationInfo(contratActif.typeFormation).color}
-                                  sx={{ fontWeight: 600 }}
-                                />
-                              </Tooltip>
-                            </Stack>
-                            <Typography variant="body2" color="text.secondary">
-                              {contratActif.autoEcole.nomEcole}
+              <Card 
+                elevation={0} 
+                sx={{ 
+                  borderRadius: 4, 
+                  border: "1px solid", 
+                  borderColor: "divider",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+                  width: "100%",
+                  overflow: "hidden"
+                }}
+              >
+                <CardContent sx={{ p: 0 }}>
+                  <Box sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.04) }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "primary.main", color: "white" }}>
+                          <BusinessOutlinedIcon />
+                        </Box>
+                        <Box>
+                          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                            <Typography variant="h5" fontWeight={850}>
+                              Permis {contratActif.typePermisCode}
                             </Typography>
-                            {contratActif.dateObtentionCode && (
-                              <Typography variant="caption" color="success.main" display="block">
-                                Code obtenu le {formatDate(contratActif.dateObtentionCode)}
-                              </Typography>
-                            )}
-                            {contratActif.dateExpirationCode && !isCodeExpired(contratActif.dateExpirationCode) && (
-                              <Typography variant="caption" color="warning.main" display="block">
-                                Code valable jusqu'au {formatDate(contratActif.dateExpirationCode)} (valide 1 an et 3 mois)
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-                        <Tooltip title={getEtatContratInfo(contratActif.etatContrat).description}>
-                          <Chip 
-                            icon={getEtatContratInfo(contratActif.etatContrat).icon}
-                            label={getEtatContratInfo(contratActif.etatContrat).label}
-                            color={getEtatContratInfo(contratActif.etatContrat).color}
-                            sx={{ fontWeight: 700, borderRadius: 1 }}
-                          />
-                        </Tooltip>
+                            <Tooltip title={getTypeFormationInfo(contratActif.typeFormation).description}>
+                              <Chip
+                                icon={getTypeFormationInfo(contratActif.typeFormation).icon}
+                                label={getTypeFormationInfo(contratActif.typeFormation).label}
+                                size="small"
+                                color={getTypeFormationInfo(contratActif.typeFormation).color}
+                                sx={{ fontWeight: 700, borderRadius: 2 }}
+                              />
+                            </Tooltip>
+                          </Stack>
+                          <Typography variant="body2" color="text.secondary" mt={0.5} fontWeight={500}>
+                            {contratActif.autoEcole.nomEcole}
+                          </Typography>
+                          {contratActif.dateObtentionCode && (
+                            <Typography variant="caption" color="success.main" display="block" fontWeight={600} mt={0.5}>
+                              Code obtenu le {formatDate(contratActif.dateObtentionCode)}
+                            </Typography>
+                          )}
+                          {contratActif.dateExpirationCode && !isCodeExpired(contratActif.dateExpirationCode) && (
+                            <Typography variant="caption" color="warning.main" display="block" fontWeight={600} mt={0.5}>
+                              Code valable jusqu'au {formatDate(contratActif.dateExpirationCode)}
+                            </Typography>
+                          )}
+                        </Box>
                       </Stack>
-                    </Box>
+                      <Tooltip title={getEtatContratInfo(contratActif.etatContrat).description}>
+                        <Chip 
+                          icon={getEtatContratInfo(contratActif.etatContrat).icon}
+                          label={getEtatContratInfo(contratActif.etatContrat).label}
+                          color={getEtatContratInfo(contratActif.etatContrat).color}
+                          sx={{ fontWeight: 800, borderRadius: 2 }}
+                        />
+                      </Tooltip>
+                    </Stack>
+                  </Box>
 
-                    <Divider />
+                  <Divider />
 
-                    <Box sx={{ p: 3 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Situation financière
-                      </Typography>
-                      
-                      <Grid container spacing={3} sx={{ mb: 3 }}>
-                        <Grid item xs={12} sm={4}>
-                          <Paper sx={{ p: 2, textAlign: "center", bgcolor: alpha(theme.palette.grey[500], 0.05) }}>
-                            <Typography variant="caption" color="text.secondary">
-                              Montant total
-                            </Typography>
-                            <Typography variant="h5" fontWeight={800}>
-                              {formatCurrency(contratActif.montantTotal)}
-                            </Typography> 
-                          </Paper>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Paper sx={{ p: 2, textAlign: "center", bgcolor: alpha(theme.palette.success.main, 0.05) }}>
-                            <Typography variant="caption" color="text.secondary">
-                              Montant payé
-                            </Typography>
-                            <Typography variant="h5" fontWeight={800} color="success.main">
-                              {formatCurrency(contratActif.montantPaye)}
-                            </Typography>
-                          </Paper>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Paper sx={{ p: 2, textAlign: "center", bgcolor: alpha(theme.palette.error.main, 0.05) }}>
-                            <Typography variant="caption" color="text.secondary">
-                              Reste à payer
-                            </Typography>
-                            <Typography variant="h5" fontWeight={800} color="error.main">
-                              {formatCurrency(contratActif.montantRestant)}
-                            </Typography>
-                          </Paper>
-                        </Grid>
+                  <Box sx={{ p: 3 }}>
+                    <Typography variant="subtitle2" color="text.secondary" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+                      Situation financière
+                    </Typography>
+                    
+                    <Grid container spacing={2} sx={{ mb: 4 }}>
+                      <Grid item xs={12} sm={4}>
+                        <Paper sx={{ p: 2.5, textAlign: "center", bgcolor: alpha(theme.palette.grey[500], 0.04), border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                            Montant total
+                          </Typography>
+                          <Typography variant="h5" fontWeight={850} mt={0.5}>
+                            {formatCurrency(contratActif.montantTotal)}
+                          </Typography> 
+                        </Paper>
                       </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Paper sx={{ p: 2.5, textAlign: "center", bgcolor: alpha(theme.palette.success.main, 0.04), border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                            Montant payé
+                          </Typography>
+                          <Typography variant="h5" fontWeight={850} color="success.main" mt={0.5}>
+                            {formatCurrency(contratActif.montantPaye)}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Paper sx={{ p: 2.5, textAlign: "center", bgcolor: alpha(theme.palette.error.main, 0.04), border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                            Reste à payer
+                          </Typography>
+                          <Typography variant="h5" fontWeight={850} color="error.main" mt={0.5}>
+                            {formatCurrency(contratActif.montantRestant)}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    </Grid>
 
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Historique des paiements
-                      </Typography>
-                      
-                      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, overflowX: "auto" }}>
-                        <Table sx={{ minWidth: 500 }}>
-                          <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 700 }}>N° Reçu</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Date de paiement</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }} align="right">Montant versé</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {contratActif.paiements && contratActif.paiements.length > 0 ? (
-                              contratActif.paiements.map((paiement) => (
-                                <TableRow key={paiement.id} hover>
-                                  <TableCell>
-                                    <Stack direction="row" spacing={1} alignItems="center">
-                                      <ReceiptOutlinedIcon fontSize="small" color="action" />
-                                      <Typography variant="body2" fontWeight={500}>
-                                        {paiement.numeroRecu}
-                                      </Typography>
-                                    </Stack>
-                                  </TableCell>
-                                  <TableCell>{formatDate(paiement.datePaiement)}</TableCell>
-                                  <TableCell align="right">
-                                    <Typography fontWeight={700} color="primary.main">
-                                      {formatCurrency(paiement.montant)}
+                    <Typography variant="subtitle2" color="text.secondary" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
+                      Historique des paiements
+                    </Typography>
+                    
+                    <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, overflowX: "auto" }}>
+                      <Table sx={{ minWidth: 500 }}>
+                        <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.04) }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 800 }}>N° Reçu</TableCell>
+                            <TableCell sx={{ fontWeight: 800 }}>Date de paiement</TableCell>
+                            <TableCell sx={{ fontWeight: 800 }} align="right">Montant versé</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {contratActif.paiements && contratActif.paiements.length > 0 ? (
+                            contratActif.paiements.map((paiement) => (
+                              <TableRow key={paiement.id} hover>
+                                <TableCell>
+                                  <Stack direction="row" spacing={1.5} alignItems="center">
+                                    <ReceiptOutlinedIcon fontSize="small" color="primary" />
+                                    <Typography variant="body2" fontWeight={700}>
+                                      {paiement.numeroRecu}
                                     </Typography>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
-                                  <Typography color="text.secondary">
-                                    Aucun paiement enregistré pour le moment.
+                                  </Stack>
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 500 }}>{formatDate(paiement.datePaiement)}</TableCell>
+                                <TableCell align="right">
+                                  <Typography fontWeight={850} color="primary.main">
+                                    {formatCurrency(paiement.montant)}
                                   </Typography>
                                 </TableCell>
                               </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                                <Typography color="text.secondary" fontWeight={500}>
+                                  Aucun paiement enregistré pour le moment.
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Box>
+                </CardContent>
+              </Card>
             </>
           ) : (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
-                <Typography color="text.secondary">
-                  Aucun contrat actif trouvé.
-                </Typography>
-              </Paper>
-            </Grid>
+            <Paper sx={{ p: 4, textAlign: "center", borderRadius: 4, border: "1px solid", borderColor: "divider" }}>
+              <Typography color="text.secondary" fontWeight={600}>
+                Aucun contrat actif trouvé.
+              </Typography>
+            </Paper>
           )}
-        </Grid>
+        </Stack>
       )}
 
-      {/* ONGLET 2: HISTORIQUE DES CONTRATS - CORRIGÉ */}
+      {/* ONGLET 2: HISTORIQUE DES CONTRATS */}
       {tabValue === 1 && (
-        <Grid container spacing={3}>
+        <Stack spacing={2.5}>
           {contratsHistoriques && contratsHistoriques.length > 0 ? (
             contratsHistoriques.map((contrat) => {
               const etatInfo = getEtatContratInfo(contrat.etatContrat);
               const formationInfo = getTypeFormationInfo(contrat.typeFormation);
               const codeExpired = contrat.dateExpirationCode && isCodeExpired(contrat.dateExpirationCode);
               return (
-                <Grid item xs={12} key={contrat.id}>
-                  <Card elevation={0} sx={{ borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
-                    <CardContent>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-                        <Stack direction="row" spacing={2} alignItems="center" flex={1}>
-                          <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.grey[500], 0.1) }}>
-                            <BusinessOutlinedIcon color="action" />
-                          </Box>
-                          <Box sx={{ flex: 1 }}>
-                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                              <Typography variant="h6" fontWeight={700}>
-                                Permis {contrat.typePermisCode}
-                              </Typography>
-                              <Chip
-                                icon={formationInfo.icon}
-                                label={formationInfo.label}
-                                size="small"
-                                color={formationInfo.color}
-                                sx={{ fontWeight: 600 }}
-                              />
-                            </Stack>
-                            <Typography variant="body2" color="text.secondary">
-                              {contrat.autoEcole.nomEcole}
+                <Card key={contrat.id} elevation={0} sx={{ borderRadius: 4, border: "1px solid", borderColor: "divider", boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
+                  <CardContent sx={{ p: 2.5 }}>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={2}>
+                      <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: alpha(theme.palette.grey[500], 0.08), color: "text.secondary" }}>
+                          <BusinessOutlinedIcon />
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                            <Typography variant="h6" fontWeight={800}>
+                              Permis {contrat.typePermisCode}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              Inscrit le {formatDate(contrat.dateInscription)}
-                            </Typography>
-                            {contrat.dateObtentionCode && (
-                              <Typography variant="caption" color="success.main" display="block">
-                                ✓ Code obtenu le {formatDate(contrat.dateObtentionCode)}
-                              </Typography>
-                            )}
-                            {contrat.dateExpirationCode && (
-                              <Typography variant="caption" color={codeExpired ? "error.main" : "warning.main"} display="block">
-                                {codeExpired ? "⚠ Code expiré le" : "📅 Code valable jusqu'au"} {formatDate(contrat.dateExpirationCode)}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Tooltip title={etatInfo.description}>
-                            <Chip 
-                              icon={etatInfo.icon}
-                              label={etatInfo.label}
-                              color={etatInfo.color}
+                            <Chip
+                              icon={formationInfo.icon}
+                              label={formationInfo.label}
                               size="small"
+                              color={formationInfo.color}
+                              sx={{ fontWeight: 700, borderRadius: 2 }}
                             />
-                          </Tooltip>
-                          <Button 
-                            variant="outlined" 
-                            size="small"
-                            startIcon={<VisibilityOutlinedIcon />}
-                            onClick={() => handleOpenDetails(contrat)}
-                          >
-                            Détails
-                          </Button>
-                        </Stack>
+                          </Stack>
+                          <Typography variant="body2" color="text.secondary" mt={0.5} fontWeight={500}>
+                            {contrat.autoEcole.nomEcole}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block" mt={0.5} fontWeight={600}>
+                            Inscrit le {formatDate(contrat.dateInscription)}
+                          </Typography>
+                          {contrat.dateObtentionCode && (
+                            <Typography variant="caption" color="success.main" display="block" fontWeight={600} mt={0.5}>
+                               Code obtenu le {formatDate(contrat.dateObtentionCode)}
+                            </Typography>
+                          )}
+                          {contrat.dateExpirationCode && (
+                            <Typography variant="caption" color={codeExpired ? "error.main" : "warning.main"} display="block" fontWeight={600} mt={0.5}>
+                              {codeExpired ? " Code expiré le" : "Code valable jusqu'au"} {formatDate(contrat.dateExpirationCode)}
+                            </Typography>
+                          )}
+                        </Box>
                       </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                      <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="flex-end" sx={{ width: { xs: "100%", sm: "auto" } }}>
+                        <Tooltip title={etatInfo.description}>
+                          <Chip 
+                            icon={etatInfo.icon}
+                            label={etatInfo.label}
+                            color={etatInfo.color}
+                            size="small"
+                            sx={{ fontWeight: 700, borderRadius: 2 }}
+                          />
+                        </Tooltip>
+                        <Button 
+                          variant="outlined" 
+                          size="small"
+                          startIcon={<VisibilityOutlinedIcon />}
+                          onClick={() => handleOpenDetails(contrat)}
+                          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700 }}
+                        >
+                          Détails
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
               );
             })
           ) : (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
-                <Typography color="text.secondary">
-                  Aucun ancien contrat trouvé.
-                </Typography>
-              </Paper>
-            </Grid>
+            <Paper sx={{ p: 4, textAlign: "center", borderRadius: 4, border: "1px solid", borderColor: "divider", boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
+              <Typography color="text.secondary" fontWeight={600}>
+                Aucun historique de contrat trouvé.
+              </Typography>
+            </Paper>
           )}
-        </Grid>
+        </Stack>
       )}
 
       {/* DIALOG DÉTAILS CONTRAT */}
       <Dialog 
         open={detailDialogOpen} 
         onClose={() => setDetailDialogOpen(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { borderRadius: 4, p: 1 } }}
       >
         <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>
-          Détails du contrat - Permis {selectedContrat?.typePermisCode}
+          Détails du contrat
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" fontWeight={850} color="primary.main">
+              Permis {selectedContrat?.typePermisCode}
+            </Typography>
             {selectedContrat?.dateInscription && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" mt={0.5} fontWeight={500}>
                 Contrat établi le {formatDate(selectedContrat?.dateInscription)} avec {selectedContrat?.autoEcole?.nomEcole}
               </Typography>
             )}
             {selectedContrat?.dateObtentionCode && (
-              <Typography variant="body2" color="success.main" sx={{ mt: 1 }}>
-                ✓ Code obtenu le {formatDate(selectedContrat.dateObtentionCode)}
+              <Typography variant="caption" color="success.main" display="block" fontWeight={750} sx={{ mt: 1 }}>
+                 Code obtenu le {formatDate(selectedContrat.dateObtentionCode)}
               </Typography>
             )}
             {selectedContrat?.dateExpirationCode && (
-              <Typography variant="body2" color={isCodeExpired(selectedContrat.dateExpirationCode) ? "error.main" : "warning.main"} sx={{ mt: 1 }}>
-                {isCodeExpired(selectedContrat.dateExpirationCode) ? "⚠ Code expiré le" : "📅 Code valable jusqu'au"} {formatDate(selectedContrat.dateExpirationCode)}
+              <Typography variant="caption" color={isCodeExpired(selectedContrat.dateExpirationCode) ? "error.main" : "warning.main"} display="block" fontWeight={750} sx={{ mt: 0.5 }}>
+                {isCodeExpired(selectedContrat.dateExpirationCode) ? " Code expiré le" : "Code valable jusqu'au"} {formatDate(selectedContrat.dateExpirationCode)}
               </Typography>
             )}
           </Box>
 
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          <Typography variant="subtitle2" color="text.secondary" fontWeight={700} gutterBottom sx={{ mb: 1.5 }}>
             Historique des paiements
           </Typography>
           
-          <TableContainer component={Paper} sx={{ mb: 3, border: "1px solid", borderColor: "divider", borderRadius: 2, overflowX: "auto" }}>
+          <TableContainer component={Paper} elevation={0} sx={{ mb: 4, border: "1px solid", borderColor: "divider", borderRadius: 3, overflowX: "auto" }}>
             <Table sx={{ minWidth: 400 }}>
-              <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+              <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.04) }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700, width: "35%" }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <ReceiptOutlinedIcon fontSize="small" />
-                      <span>N° Reçu</span>
-                    </Stack>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: "35%" }}>Date de paiement</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: "30%" }} align="right">Montant versé</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>N° Reçu</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }} align="right">Montant</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {selectedContrat?.paiements && selectedContrat.paiements.length > 0 ? (
                   selectedContrat.paiements.map((p) => (
                     <TableRow key={p.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {p.numeroRecu}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{formatDate(p.datePaiement)}</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>{p.numeroRecu}</TableCell>
+                      <TableCell sx={{ fontWeight: 500 }}>{formatDate(p.datePaiement)}</TableCell>
                       <TableCell align="right">
-                        <Chip 
-                          icon={<AttachMoneyOutlinedIcon />}
-                          label={formatCurrency(p.montant)}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{ fontWeight: 600 }}
-                        />
+                        <Typography fontWeight={850} color="primary.main">
+                          {formatCurrency(p.montant)}
+                        </Typography>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                      <Typography color="text.secondary">
-                        Aucun paiement enregistré pour ce contrat
+                    <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
+                      <Typography color="text.secondary" fontWeight={500}>
+                        Aucun paiement enregistré.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -625,40 +606,35 @@ const FinancesCandidat = () => {
             </Table>
           </TableContainer>
 
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          <Typography variant="subtitle2" color="text.secondary" fontWeight={700} gutterBottom sx={{ mb: 1.5 }}>
             Résumé financier
           </Typography>
           
-          <Box sx={{ p: 2, bgcolor: alpha(theme.palette.info.main, 0.05), borderRadius: 2 }}>
+          <Box sx={{ p: 2.5, bgcolor: alpha(theme.palette.info.main, 0.04), border: "1px solid", borderColor: alpha(theme.palette.info.main, 0.15), borderRadius: 3 }}>
             <Grid container spacing={2}>
               <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">Total contrat</Typography>
-                <Typography variant="subtitle1" fontWeight={800}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">Total contrat</Typography>
+                <Typography variant="subtitle1" fontWeight={850}>
                   {formatCurrency(selectedContrat?.montantTotal)}
                 </Typography>
               </Grid>
               <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">Total réglé</Typography>
-                <Typography variant="subtitle1" fontWeight={800} color="success.main">
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">Total réglé</Typography>
+                <Typography variant="subtitle1" fontWeight={850} color="success.main">
                   {formatCurrency(selectedContrat?.montantPaye)}
                 </Typography>
               </Grid>
               <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">Solde restant</Typography>
-                <Typography variant="subtitle1" fontWeight={800} color={selectedContrat?.montantRestant === 0 ? "success.main" : "error.main"}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">Solde restant</Typography>
+                <Typography variant="subtitle1" fontWeight={850} color={selectedContrat?.montantRestant === 0 ? "success.main" : "error.main"}>
                   {formatCurrency(selectedContrat?.montantRestant)}
                 </Typography>
-                {selectedContrat?.montantRestant === 0 && (
-                  <Typography variant="caption" color="success.main" display="block">
-                    ✓ Contrat soldé
-                  </Typography>
-                )}
               </Grid>
             </Grid>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDetailDialogOpen(false)} variant="contained">
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setDetailDialogOpen(false)} variant="contained" sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}>
             Fermer
           </Button>
         </DialogActions>

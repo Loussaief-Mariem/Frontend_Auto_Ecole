@@ -24,6 +24,7 @@ import TarifsManagement from "../pages/Dashboard/Proprietaire/TarifsManagement";
 // NOUVEAUX IMPORTS
 import PlanningSeancesPage from "../pages/Dashboard/Secretaire/PlanningSeancesPage";
 import PlanningConduiteMoniteur from "../pages/Dashboard/Moniteur/PlanningConduiteMoniteur";
+import PlanningGlobalPage from "../pages/Dashboard/PlanningGlobalPage";
 
 // CANDIDAT PAGES
 import HomeCandidat from "../pages/Dashboard/Candidat/HomeCandidat";
@@ -69,6 +70,7 @@ const AppRoutes = () => {
               element={<GestionUtilisateurs />}
             />
             <Route path="tarifs" element={<TarifsManagement />} />
+            <Route path="calendrier" element={<PlanningGlobalPage />} />
           </Route>
 
           {/* Moniteur */}
@@ -81,6 +83,7 @@ const AppRoutes = () => {
             />
             {/* NOUVELLE ROUTE pour le planning avec calendrier */}
             <Route path="planning" element={<PlanningConduiteMoniteur />} />
+            <Route path="calendrier" element={<PlanningGlobalPage />} />
             <Route path="candidats/:id" element={<CandidatProfilMoniteur />} />
           </Route>
 
@@ -91,6 +94,7 @@ const AppRoutes = () => {
             <Route path="candidats/:id" element={<CandidatProfilePage />} />
             {/* NOUVELLE ROUTE pour la planification des séances */}
             <Route path="planning" element={<PlanningSeancesPage />} />
+            <Route path="calendrier" element={<PlanningGlobalPage />} />
             <Route path="test-management" element={<TestManagementPage />} />
           </Route>
           

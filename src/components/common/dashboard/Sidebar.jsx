@@ -59,20 +59,20 @@ const menusByRole = {
       icon: <PriceChangeOutlinedIcon />,
       path: "/dashboard/proprietaire/tarifs",
     },
-    // {
-    //   text: "Planning conduite",
-    //   icon: <CalendarMonthOutlinedIcon />,
-    //   path: "/dashboard/proprietaire/planning-conduite",
-    // },
-    {
-      text: "Mon planning",
-      icon: <CalendarMonthOutlinedIcon />,
-      path: "/dashboard/moniteur/planning",
-    },
     {
       text: "Planning conduite",
-      icon: <EventAvailableOutlinedIcon />,
+      icon: <CalendarMonthOutlinedIcon />,
       path: "/dashboard/moniteur/planning-conduite",
+    },
+    {
+      text: "Calendrier Global",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/proprietaire/calendrier",
+    },
+    {
+      text: "Mes candidats",
+      icon: <SchoolOutlinedIcon />,
+      path: "/dashboard/candidats",
     },
   ],
 
@@ -83,12 +83,6 @@ const menusByRole = {
       path: "/dashboard/secretaire",
     },
     {
-      text: "Ajouter un candidat",
-      icon: <PersonAddOutlinedIcon />,
-      path: "/dashboard/secretaire/add-candidat",
-    },
-
-    {
       text: "Gestion des candidats",
       icon: <SchoolOutlinedIcon />,
       path: "/dashboard/candidats",
@@ -96,8 +90,13 @@ const menusByRole = {
 
     {
       text: "Planifier séances",
-      icon: <CalendarMonthOutlinedIcon />,
+      icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/secretaire/planning",
+    },
+    {
+      text: "Calendrier Global",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/secretaire/calendrier",
     },
     {
       text: "Gestion Tests Blancs",
@@ -113,14 +112,19 @@ const menusByRole = {
       path: "/dashboard/moniteur",
     },
     {
-      text: "Mon planning",
-      icon: <CalendarMonthOutlinedIcon />,
+      text: "Gérer mes horaires",
+      icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/moniteur/planning",
     },
     {
-      text: "Planning conduite",
+      text: "Planning conduite (Liste)",
       icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/moniteur/planning-conduite",
+    },
+    {
+      text: "Mon Calendrier",
+      icon: <CalendarMonthOutlinedIcon />,
+      path: "/dashboard/moniteur/calendrier",
     },
     {
       text: "Mes candidats",
@@ -147,7 +151,7 @@ const menusByRole = {
       path: "/dashboard/candidat/examens",
     },
     {
-      text: "Finances",
+      text: "Mes paiements",
       icon: <PaymentsOutlinedIcon />,
       path: "/dashboard/candidat/finances",
     },

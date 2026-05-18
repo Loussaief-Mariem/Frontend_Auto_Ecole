@@ -127,8 +127,12 @@ export const validateCandidat = (form) => {
     }
   }
 
-  if (form.typeFormation === "")
+  if (form.typeFormation === "") {
     errors.typeFormation = "Type formation obligatoire";
+  } else if (form.typeFormation === 1 && !form.dateObtentionCode) {
+    // 1 = Pratique
+    errors.dateObtentionCode = "Date d'obtention de code obligatoire pour la formation pratique";
+  }
 
   return errors;
 };

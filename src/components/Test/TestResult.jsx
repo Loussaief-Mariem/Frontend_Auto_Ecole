@@ -15,7 +15,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Chip,
+  Chip, Stack 
 } from "@mui/material";
 import {
   CheckCircle,
@@ -29,6 +29,21 @@ import { THEME_CODE_LABELS } from "../../enums";
 
 const TestResult = ({ result }) => {
   console.log("Résultat reçu dans TestResult.jsx :", result);
+  
+  const getImageUrl = (path) => {
+    if (!path) return "";
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://localhost:7057/api';
+    const baseHost = baseUrl.replace('/api', '');
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      if (path.includes('https://localhost:7057')) {
+        return path.replace('https://localhost:7057', baseHost);
+      }
+      return path;
+    }
+    return path.startsWith("/") ? `${baseHost}${path}` : `${baseHost}/${path}`;
+  };
+
   if (!result) return null;
 
   const score = result.score ?? 0;
@@ -41,313 +56,291 @@ const TestResult = ({ result }) => {
   const reponsesDetaillees = result.reponsesDetaillees ?? [];
 
   return (
-    <Box sx={{ maxWidth: 900, mx: "auto", p: 3 }}>
+    <Box sx={{ maxWidth: 600, mx: "auto", width: "100%", px: { xs: 2, sm: 0 }, py: 3 }}>
+      {/* Score Header Card */}
       <Paper
-        elevation={4}
-        sx={{ p: 4, borderRadius: 4, textAlign: "center", mb: 4 }}
+        elevation={0}
+        sx={{
+          p: 4,
+          borderRadius: 4,
+          textAlign: "center",
+          border: "1px solid",
+          borderColor: estReussi ? "success.light" : "error.light",
+          background: estReussi 
+            ? "linear-gradient(135deg, rgba(22, 163, 74, 0.05) 0%, rgba(22, 163, 74, 0.01) 100%)"
+            : "linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(220, 38, 38, 0.01) 100%)",
+          boxShadow: "0 2px 16px rgba(0,0,0,0.01)",
+          mb: 3
+        }}
       >
-        <Typography variant="h4" gutterBottom fontWeight="bold">
-          Résultat Final
+        <Typography variant="h5" fontWeight={850} color="text.primary" gutterBottom>
+          Résultat du Test
         </Typography>
 
-        <Box sx={{ position: "relative", display: "inline-flex", my: 3 }}>
+        <Box sx={{ my: 3 }}>
           <Typography
             variant="h2"
             color={estReussi ? "success.main" : "error.main"}
-            fontWeight="bold"
+            fontWeight={900}
           >
-            {score} / {total}
+            {score} <Typography variant="h4" component="span" color="text.secondary" fontWeight={700}>/ {total}</Typography>
           </Typography>
         </Box>
 
-        <Typography
-          variant="h5"
-          color={estReussi ? "success.main" : "error.main"}
-          sx={{ mb: 2 }}
-        >
-          {estReussi ? "Test Réussi ! 🎉" : "Test Échoué ❌"}
-        </Typography>
-
-        <LinearProgress
-          variant="determinate"
-          value={percentage}
+        <Chip
+          icon={estReussi ? <CheckCircle sx={{ fontSize: "1.2rem !important" }} /> : <Cancel sx={{ fontSize: "1.2rem !important" }} />}
+          label={estReussi ? "Test Réussi !" : "Test Échoué"}
           color={estReussi ? "success" : "error"}
-          sx={{ height: 10, borderRadius: 5, mb: 2 }}
+          sx={{ 
+            fontWeight: 800, 
+            fontSize: "1rem", 
+            px: 2, 
+            py: 2.2, 
+            borderRadius: 3, 
+            mb: 3,
+            "& .MuiChip-icon": {
+              marginLeft: "4px !important",
+              marginRight: "-4px !important",
+            }
+          }}
         />
-        <Typography variant="body2" color="textSecondary" fontWeight="bold">
-          Score : {percentage.toFixed(1)}% (Objectif : 70%)
-        </Typography>
+
+        <Box sx={{ width: "100%", maxWidth: 320, mx: "auto" }}>
+          <LinearProgress
+            variant="determinate"
+            value={percentage}
+            color={estReussi ? "success" : "error"}
+            sx={{ height: 6, borderRadius: 3, mb: 1.5 }}
+          />
+          <Typography variant="caption" color="text.secondary" fontWeight={700}>
+            Score obtenu : {percentage.toFixed(1)}% (Objectif minimum : 70%)
+          </Typography>
+        </Box>
       </Paper>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={7}>
+      <Stack spacing={3}>
+        {/* Recommandations */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 4,
+            border: "1px solid",
+            borderColor: "divider",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.02)"
+          }}
+        >
           <Typography
-            variant="h6"
+            variant="subtitle1"
+            fontWeight={850}
             gutterBottom
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1,
-              fontWeight: "bold",
+              gap: 1.5,
+              mb: 2.5
             }}
           >
-            <CheckCircle color="primary" /> Détails par thème
+            <Lightbulb color="warning" /> Conseils et Recommandations
           </Typography>
-          <Grid container spacing={2}>
-            {resultatsParTheme.map((rt, index) => {
-              const themeLabel = THEME_CODE_LABELS[rt.theme]?.label || rt.theme;
-              return (
-                <Grid item xs={12} key={index}>
-                  <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                    <CardContent sx={{ py: 2, "&:last-child": { pb: 2 } }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          mb: 1,
-                        }}
-                      >
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {themeLabel}
-                        </Typography>
-                        <Typography
-                          variant="subtitle2"
-                          fontWeight="bold"
-                          color="primary"
-                        >
-                          {rt.bonnesReponses ?? 0} / {rt.nombreQuestions ?? 0}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={rt.pourcentage ?? 0}
-                        color={
-                          (rt.pourcentage ?? 0) >= 70
-                            ? "success"
-                            : (rt.pourcentage ?? 0) >= 50
-                              ? "warning"
-                              : "error"
-                        }
-                        sx={{ height: 8, borderRadius: 4 }}
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
-        </Grid>
 
-        <Grid item xs={12} md={5}>
+          <List disablePadding>
+            {recommendations.length > 0 ? (
+              recommendations.map((rec, index) => (
+                <React.Fragment key={index}>
+                  <ListItem sx={{ px: 0, py: 1.5 }}>
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <Warning color="warning" fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={rec}
+                      primaryTypographyProps={{
+                        variant: "body2",
+                        fontWeight: 600,
+                        color: "text.primary"
+                      }}
+                    />
+                  </ListItem>
+                  {index < recommendations.length - 1 && <Divider />}
+                </React.Fragment>
+              ))
+            ) : (
+              <ListItem sx={{ px: 0, py: 1 }}>
+                <ListItemText
+                  primary="Excellent travail ! Tous les thèmes sont bien maîtrisés."
+                  primaryTypographyProps={{ variant: "body2", fontWeight: 600, color: "success.main" }}
+                />
+              </ListItem>
+            )}
+          </List>
+        </Paper>
+
+        {/* Correction Détaillée */}
+        <Box>
           <Typography
             variant="h6"
+            fontWeight={850}
             gutterBottom
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              fontWeight: "bold",
-            }}
+            sx={{ mb: 2.5 }}
           >
-            <Lightbulb color="warning" /> Recommandations
+            Correction détaillée
           </Typography>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: 3,
-              bgcolor: "#fff8e1",
-              border: "1px solid #ffe082",
-            }}
-          >
-            <List disablePadding>
-              {recommendations.length > 0 ? (
-                recommendations.map((rec, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem sx={{ px: 1 }}>
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Warning color="warning" fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={rec}
-                        primaryTypographyProps={{
-                          variant: "body2",
-                          fontWeight: 500,
-                        }}
-                      />
-                    </ListItem>
-                    {index < recommendations.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))
-              ) : (
-                <ListItem sx={{ px: 1 }}>
-                  <ListItemText
-                    primary="Excellent travail ! Continuez ainsi."
-                    primaryTypographyProps={{ variant: "body2" }}
-                  />
-                </ListItem>
-              )}
-            </List>
-          </Paper>
-        </Grid>
-      </Grid>
 
-      {/* Correction Détaillée */}
-      <Typography
-        variant="h5"
-        gutterBottom
-        sx={{ mt: 6, mb: 3, fontWeight: "bold" }}
-      >
-        Correction détaillée
-      </Typography>
-
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {reponsesDetaillees.map((rep, index) => (
-          <Accordion
-            key={rep.questionId || index}
-            elevation={0}
-            sx={{
-              border: "1px solid #e2e8f0",
-              borderRadius: "12px !important",
-              overflow: "hidden",
-              "&:before": { display: "none" },
-            }}
-          >
-            <AccordionSummary
-              expandIcon={<ExpandMore />}
-              sx={{ bgcolor: rep.estCorrecte ? "#f0fdf4" : "#fef2f2" }}
-            >
-              <Box
+          <Stack spacing={2}>
+            {reponsesDetaillees.map((rep, index) => (
+              <Accordion
+                key={rep.questionId || index}
+                elevation={0}
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  width: "100%",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: "16px !important",
+                  overflow: "hidden",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.01)",
+                  "&:before": { display: "none" },
                 }}
               >
-                {rep.estCorrecte ? (
-                  <CheckCircle color="success" />
-                ) : (
-                  <Cancel color="error" />
-                )}
-                <Typography sx={{ fontWeight: "bold", flexGrow: 1 }}>
-                  Question {index + 1}
-                </Typography>
-                <Chip
-                  label={rep.estCorrecte ? "Correct" : "Incorrect"}
-                  color={rep.estCorrecte ? "success" : "error"}
-                  size="small"
-                  variant="outlined"
-                  sx={{ bgcolor: "white" }}
-                />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 3, bgcolor: "white" }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                {rep.enonce}
-              </Typography>
-
-              {rep.image && (
-                <Box sx={{ mb: 3, textAlign: "center" }}>
-                  <img
-                    src={rep.image}
-                    alt="Question"
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: 200,
-                      borderRadius: 8,
-                      border: "1px solid #e2e8f0",
-                    }}
-                  />
-                </Box>
-              )}
-
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      height: "100%",
-                      borderColor: rep.estCorrecte
-                        ? "success.main"
-                        : "error.main",
-                      bgcolor: rep.estCorrecte ? "#f0fdf4" : "#fef2f2",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      display="block"
-                      gutterBottom
-                    >
-                      Votre réponse :
+                <AccordionSummary
+                  expandIcon={<ExpandMore />}
+                  sx={{ 
+                    bgcolor: rep.estCorrecte ? "rgba(22, 163, 74, 0.03)" : "rgba(220, 38, 38, 0.03)",
+                    px: 2.5
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1.5} sx={{ width: "100%" }}>
+                    {rep.estCorrecte ? (
+                      <CheckCircle color="success" fontSize="small" />
+                    ) : (
+                      <Cancel color="error" fontSize="small" />
+                    )}
+                    <Typography sx={{ fontWeight: 800, flexGrow: 1, fontSize: "0.95rem" }}>
+                      Question {index + 1}
                     </Typography>
-                    <Typography
-                      variant="body1"
-                      fontWeight="bold"
-                      color={rep.estCorrecte ? "success.main" : "error.main"}
-                    >
-                      {rep.texteReponseCandidat}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                {!rep.estCorrecte && (
-                  <Grid item xs={12} sm={6}>
+                    <Chip
+                      label={rep.estCorrecte ? "Correct" : "Incorrect"}
+                      color={rep.estCorrecte ? "success" : "error"}
+                      size="small"
+                      variant="filled"
+                      sx={{ fontWeight: 750, borderRadius: 2, fontSize: "0.75rem", height: 24 }}
+                    />
+                  </Stack>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 3, bgcolor: "background.paper" }}>
+                  <Typography variant="body1" sx={{ mb: 2.5, fontWeight: 750, color: "text.primary" }}>
+                    {rep.enonce}
+                  </Typography>
+
+                  {rep.image && (
+                    <Box sx={{ mb: 3, textAlign: "center" }}>
+                      <img
+                        src={getImageUrl(rep.image)}
+                        alt="Question"
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: 180,
+                          borderRadius: 8,
+                          border: "1px solid #e2e8f0",
+                        }}
+                      />
+                    </Box>
+                  )}
+
+                  <Grid container spacing={2} sx={{ mb: 2.5 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          height: "100%",
+                          borderRadius: 3,
+                          borderColor: rep.estCorrecte
+                            ? "success.light"
+                            : "error.light",
+                          bgcolor: rep.estCorrecte ? "rgba(22, 163, 74, 0.02)" : "rgba(220, 38, 38, 0.02)",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="textSecondary"
+                          fontWeight={600}
+                          display="block"
+                          gutterBottom
+                        >
+                          Votre réponse :
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight="bold"
+                          color={rep.estCorrecte ? "success.main" : "error.main"}
+                        >
+                          {rep.texteReponseCandidat}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    {!rep.estCorrecte && (
+                      <Grid item xs={12} sm={6}>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            height: "100%",
+                            borderRadius: 3,
+                            borderColor: "success.light",
+                            bgcolor: "rgba(22, 163, 74, 0.02)",
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            color="textSecondary"
+                            fontWeight={600}
+                            display="block"
+                            gutterBottom
+                          >
+                            Bonne réponse :
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight="bold"
+                            color="success.main"
+                          >
+                            {rep.texteReponseCorrecte}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                  </Grid>
+
+                  {rep.explication && (
                     <Paper
-                      variant="outlined"
+                      elevation={0}
                       sx={{
                         p: 2,
-                        height: "100%",
-                        borderColor: "success.main",
-                        bgcolor: "#f0fdf4",
+                        bgcolor: "grey.50",
+                        borderLeft: "4px solid",
+                        borderLeftColor: "primary.main",
+                        borderRadius: 1,
                       }}
                     >
                       <Typography
                         variant="caption"
-                        color="textSecondary"
-                        display="block"
+                        color="primary"
+                        fontWeight={750}
                         gutterBottom
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
-                        Bonne réponse :
+                        <Info fontSize="small" /> Explication
                       </Typography>
-                      <Typography
-                        variant="body1"
-                        fontWeight="bold"
-                        color="success.main"
-                      >
-                        {rep.texteReponseCorrecte}
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        {rep.explication}
                       </Typography>
                     </Paper>
-                  </Grid>
-                )}
-              </Grid>
-
-              {rep.explication && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    bgcolor: "#f8fafc",
-                    borderLeft: "4px solid #3b82f6",
-                    borderRadius: 1,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    color="primary"
-                    gutterBottom
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  >
-                    <Info fontSize="small" /> Explication
-                  </Typography>
-                  <Typography variant="body2">{rep.explication}</Typography>
-                </Paper>
-              )}
-            </AccordionDetails>
-          </Accordion>
-        ))}
-      </Box>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </Stack>
+        </Box>
+      </Stack>
     </Box>
   );
 };

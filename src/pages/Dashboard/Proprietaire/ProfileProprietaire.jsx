@@ -15,11 +15,13 @@ import SaveIcon from "@mui/icons-material/Save";
 import CloseIcon from "@mui/icons-material/Close";
 
 import { getProfile, updateProfile } from "../../../api/propretaireService";
+import { useAuth } from "../../../context/AuthContext";
 
 // ✅ liste des permis
 const PERMIS_OPTIONS = ["A", "AA", "B", "BE", "C", "CE", "D", "DE", "G", "H"];
 
 const ProfileProprietaire = () => {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [backup, setBackup] = useState(null);
@@ -143,40 +145,42 @@ const ProfileProprietaire = () => {
         return;
       }
 
-      if (!profile.nomAutoEcole?.trim()) {
-        showMessage("Le nom de l'auto-école est requis", "error");
-        setSaving(false);
-        return;
-      }
+      if (user?.role === "Proprietaire") {
+        if (!profile.nomAutoEcole?.trim()) {
+          showMessage("Le nom de l'auto-école est requis", "error");
+          setSaving(false);
+          return;
+        }
 
-      if (!profile.codeEtablissement?.trim()) {
-        showMessage("Le code établissement est requis", "error");
-        setSaving(false);
-        return;
-      }
+        if (!profile.codeEtablissement?.trim()) {
+          showMessage("Le code établissement est requis", "error");
+          setSaving(false);
+          return;
+        }
 
-      if (!profile.identifiantFiscal?.trim()) {
-        showMessage("L'identifiant fiscal est requis", "error");
-        setSaving(false);
-        return;
-      }
+        if (!profile.identifiantFiscal?.trim()) {
+          showMessage("L'identifiant fiscal est requis", "error");
+          setSaving(false);
+          return;
+        }
 
-      if (!profile.adresse.rue?.trim()) {
-        showMessage("La rue est requise", "error");
-        setSaving(false);
-        return;
-      }
+        if (!profile.adresse.rue?.trim()) {
+          showMessage("La rue est requise", "error");
+          setSaving(false);
+          return;
+        }
 
-      if (!profile.adresse.ville?.trim()) {
-        showMessage("La ville est requise", "error");
-        setSaving(false);
-        return;
-      }
+        if (!profile.adresse.ville?.trim()) {
+          showMessage("La ville est requise", "error");
+          setSaving(false);
+          return;
+        }
 
-      if (!profile.adresse.gouvernorat?.trim()) {
-        showMessage("Le gouvernorat est requis", "error");
-        setSaving(false);
-        return;
+        if (!profile.adresse.gouvernorat?.trim()) {
+          showMessage("Le gouvernorat est requis", "error");
+          setSaving(false);
+          return;
+        }
       }
 
       const dataToSend = {
@@ -400,72 +404,81 @@ const ProfileProprietaire = () => {
         </Paper>
 
         {/* AUTO-ECOLE */}
-        <Paper sx={{ flex: 1, p: 3, borderRadius: 3 }}>
-          <Typography variant="h6" fontWeight={700}>
-            Auto-école
-          </Typography>
+        {user?.role === "Proprietaire" && (
+          <Paper sx={{ flex: 1, p: 3, borderRadius: 3 }}>
+            <Typography variant="h6" fontWeight={700}>
+              Auto-école
+            </Typography>
 
-          <Stack spacing={2} mt={2}>
-            <TextField
-              {...fieldProps}
-              label="Nom auto-école"
-              name="nomAutoEcole"
-              value={profile.nomAutoEcole}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              {...fieldProps}
-              label="Code établissement"
-              name="codeEtablissement"
-              value={profile.codeEtablissement}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              {...fieldProps}
-              label="Identifiant fiscal"
-              name="identifiantFiscal"
-              value={profile.identifiantFiscal}
-              onChange={handleChange}
-              required
-            />
+            <Stack spacing={2} mt={2}>
+              <TextField
+                {...fieldProps}
+                label="Nom auto-école"
+                name="nomAutoEcole"
+                value={profile.nomAutoEcole}
+                onChange={handleChange}
+                required={user?.role === "Proprietaire"}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
+              <TextField
+                {...fieldProps}
+                label="Code établissement"
+                name="codeEtablissement"
+                value={profile.codeEtablissement}
+                onChange={handleChange}
+                required={user?.role === "Proprietaire"}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
+              <TextField
+                {...fieldProps}
+                label="Identifiant fiscal"
+                name="identifiantFiscal"
+                value={profile.identifiantFiscal}
+                onChange={handleChange}
+                required={user?.role === "Proprietaire"}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
 
-            {/* ✅ ADRESSE */}
-            <Typography fontWeight={600}>Adresse</Typography>
-            <TextField
-              {...fieldProps}
-              label="Rue"
-              name="adresse.rue"
-              value={profile.adresse.rue}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              {...fieldProps}
-              label="Ville"
-              name="adresse.ville"
-              value={profile.adresse.ville}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              {...fieldProps}
-              label="Gouvernorat"
-              name="adresse.gouvernorat"
-              value={profile.adresse.gouvernorat}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              {...fieldProps}
-              label="Pays"
-              name="adresse.pays"
-              value={profile.adresse.pays}
-              onChange={handleChange}
-            />
-          </Stack>
-        </Paper>
+              {/* ✅ ADRESSE */}
+              <Typography fontWeight={600}>Adresse</Typography>
+              <TextField
+                {...fieldProps}
+                label="Rue"
+                name="adresse.rue"
+                value={profile.adresse.rue}
+                onChange={handleChange}
+                required={user?.role === "Proprietaire"}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
+              <TextField
+                {...fieldProps}
+                label="Ville"
+                name="adresse.ville"
+                value={profile.adresse.ville}
+                onChange={handleChange}
+                required={user?.role === "Proprietaire"}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
+              <TextField
+                {...fieldProps}
+                label="Gouvernorat"
+                name="adresse.gouvernorat"
+                value={profile.adresse.gouvernorat}
+                onChange={handleChange}
+                required={user?.role === "Proprietaire"}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
+              <TextField
+                {...fieldProps}
+                label="Pays"
+                name="adresse.pays"
+                value={profile.adresse.pays}
+                onChange={handleChange}
+                disabled={!editMode || user?.role !== "Proprietaire"}
+              />
+            </Stack>
+          </Paper>
+        )}
       </Stack>
     </Box>
   );

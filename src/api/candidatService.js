@@ -103,3 +103,15 @@ export const getAllActiveCandidats = async () => {
   const response = await api.get("/Candidats/active");
   return response.data;
 };
+
+// Récupérer un candidat par CIN
+export const getCandidatByCin = async (cin, autoEcoleId) => {
+  const response = await api.get(`/Candidats/by-cin/${cin}?autoEcoleId=${autoEcoleId}`);
+  return response.data;
+};
+
+// Réinscrire un candidat
+export const reinscrireCandidat = async (id, data) => {
+  const response = await api.post(`/Candidats/${id}/reinscrire`, data);
+  return response.data;
+};

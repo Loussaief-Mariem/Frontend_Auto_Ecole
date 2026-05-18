@@ -15,6 +15,7 @@ import {
   Alert,
   CircularProgress,
   Typography,
+  Stack 
 } from "@mui/material";
 import { StatutExamen, TypeExamen, TypePermis } from "../../../enums";
 
@@ -150,12 +151,30 @@ const ResultatExamenForm = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Enregistrer le résultat - {getTypeLabel()}</DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="xs" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          padding: 1,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+        }
+      }}
+    >
+      <DialogTitle sx={{ fontWeight: 850, pb: 1, color: "text.primary" }}>
+        Enregistrer le résultat
+        <Typography variant="body2" color="text.secondary" fontWeight={500} mt={0.5}>
+          {getTypeLabel()}
+        </Typography>
+      </DialogTitle>
+      
       <DialogContent>
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 1.5 }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2.5, borderRadius: 3, fontWeight: 600 }}>
               {error}
             </Alert>
           )}
@@ -163,33 +182,42 @@ const ResultatExamenForm = ({
           {/* Champ note - UNIQUEMENT pour l'examen de code */}
           {isCodeExamen() && permisInfo && (
             <>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="body2">
-                  <strong>Permis {permisInfo.code}</strong>
+              <Alert 
+                severity="info" 
+                sx={{ 
+                  mb: 2.5, 
+                  borderRadius: 3,
+                  "& .MuiAlert-message": { width: "100%" }
+                }}
+              >
+                <Typography variant="subtitle2" fontWeight={800} color="info.main" gutterBottom>
+                  Réglementation Permis {permisInfo.code}
                 </Typography>
-                <Typography variant="body2">
-                  • Nombre de questions: {permisInfo.nombreQuestions}
-                </Typography>
-                <Typography variant="body2">
-                  • Seuil de réussite: {permisInfo.seuilReussite}/
-                  {permisInfo.nombreQuestions}
-                </Typography>
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" color="text.primary" fontWeight={600} display="block">
+                    • Nombre de questions : <strong>{permisInfo.nombreQuestions}</strong>
+                  </Typography>
+                  <Typography variant="caption" color="text.primary" fontWeight={600} display="block">
+                    • Seuil minimum de réussite : <strong>{permisInfo.seuilReussite} / {permisInfo.nombreQuestions}</strong>
+                  </Typography>
+                </Stack>
               </Alert>
 
               <TextField
-                label={`Note du code (sur ${getMaxNote()})`}
+                label={`Note obtenue (sur ${getMaxNote()})`}
                 type="number"
                 fullWidth
                 required
                 value={formData.noteCode}
                 onChange={(e) => handleChange("noteCode", e.target.value)}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2.5 }}
+                InputProps={{ sx: { borderRadius: 2 } }}
                 inputProps={{
                   min: 1,
                   max: getMaxNote(),
                   step: 1,
                 }}
-                helperText={`Note valide : 1 à ${getMaxNote()} (minimale pour réussite: ${getSeuilReussite()}/${getMaxNote()})`}
+                helperText={`Note minimale requise : ${getSeuilReussite()} / ${getMaxNote()}`}
                 error={
                   formData.noteCode &&
                   (parseInt(formData.noteCode) <= 0 ||
@@ -200,10 +228,9 @@ const ResultatExamenForm = ({
           )}
 
           {isCodeExamen() && !permisInfo && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                Informations du permis non disponibles. Note maximale: 40,
-                seuil: 30
+            <Alert severity="warning" sx={{ mb: 2.5, borderRadius: 3 }}>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Informations de permis indisponibles.
               </Typography>
               <TextField
                 label="Note du code (sur 40)"
@@ -212,29 +239,44 @@ const ResultatExamenForm = ({
                 required
                 value={formData.noteCode}
                 onChange={(e) => handleChange("noteCode", e.target.value)}
-                sx={{ mb: 2 }}
+                InputProps={{ sx: { borderRadius: 2 } }}
+                sx={{ mt: 1.5 }}
                 inputProps={{ min: 1, max: 40, step: 1 }}
               />
             </Alert>
           )}
 
-          <FormControl fullWidth required>
-            <InputLabel>Statut</InputLabel>
+          <FormControl fullWidth required sx={{ mt: 1 }}>
+            <InputLabel id="statut-select-label">Statut de l'examen</InputLabel>
             <Select
+              labelId="statut-select-label"
               value={formData.statut}
               onChange={(e) => handleChange("statut", e.target.value)}
-              label="Statut"
+              label="Statut de l'examen"
+              sx={{ borderRadius: 2 }}
             >
-              <MenuItem value={StatutExamen.Satisfait}>
+              <MenuItem value={StatutExamen.Satisfait} sx={{ fontWeight: 600 }}>
                 Satisfait (Réussi)
               </MenuItem>
-              <MenuItem value={StatutExamen.Ajourne}>Ajourné (Échoué)</MenuItem>
+              <MenuItem value={StatutExamen.Ajourne} sx={{ fontWeight: 600 }}>
+                Ajourné (Échoué)
+              </MenuItem>
             </Select>
           </FormControl>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+      
+      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1 }}>
+        <Button 
+          onClick={onClose} 
+          disabled={loading}
+          sx={{ 
+            textTransform: "none", 
+            fontWeight: 700, 
+            borderRadius: 2,
+            px: 3
+          }}
+        >
           Annuler
         </Button>
         <Button
@@ -245,8 +287,16 @@ const ResultatExamenForm = ({
             !formData.statut ||
             (isCodeExamen() && !formData.noteCode)
           }
+          sx={{ 
+            textTransform: "none", 
+            fontWeight: 750, 
+            borderRadius: 2,
+            px: 3,
+            boxShadow: "none",
+            "&:hover": { boxShadow: "none" }
+          }}
         >
-          {loading ? <CircularProgress size={24} /> : "Enregistrer"}
+          {loading ? <CircularProgress size={24} color="inherit" /> : "Enregistrer"}
         </Button>
       </DialogActions>
     </Dialog>

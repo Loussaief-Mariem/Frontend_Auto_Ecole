@@ -15,7 +15,7 @@ import {
   DialogContent,
   DialogActions,
    useTheme ,
-   Alert , CircularProgress 
+   Alert , CircularProgress , Grid
 } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
@@ -222,66 +222,67 @@ const SessionsCandidat = () => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: 2.5,
         mb: 2,
-        borderRadius: 3,
+        borderRadius: 4,
         border: "1px solid",
         borderColor: "divider",
-        "&:hover": { borderColor: "primary.main", transition: "0.3s" },
+        boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+        transition: "0.2s",
+        "&:hover": { 
+          borderColor: "primary.main", 
+          boxShadow: "0 4px 16px rgba(0,0,0,0.04)" 
+        },
+        width: "100%"
       }}
     >
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-        <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
+      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={2}>
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ width: "100%", flex: 1 }}>
           <Box
             sx={{
               p: 1.5,
-              borderRadius: 2,
-              bgcolor: type === "Code" ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.secondary.main, 0.1),
+              borderRadius: 3,
+              bgcolor: type === "Code" ? alpha(theme.palette.primary.main, 0.08) : alpha(theme.palette.secondary.main, 0.08),
               color: type === "Code" ? "primary.main" : "secondary.main",
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
+              width: 48,
+              height: 48,
             }}
           >
             <CalendarMonthOutlinedIcon />
           </Box>
-          <Box>
-            <Typography fontWeight={700}>{date}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              <AccessTimeOutlinedIcon fontSize="inherit" sx={{ verticalAlign: "middle", mr: 0.5 }} />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography fontWeight={800} variant="body1">{date}</Typography>
+            <Typography variant="body2" color="text.secondary" display="flex" alignItems="center" gap={0.5} mt={0.5}>
+              <AccessTimeOutlinedIcon fontSize="inherit" />
               {heureDebut} - Durée: {formatDuree(dureeMinutes || 60)}
             </Typography>
           </Box>
-          <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-          <Box>
-            <Typography variant="caption" color="text.secondary" display="block">
-              Type de séance
-            </Typography>
-            <Chip
-              label={`${type}${type === "Code" ? ` - ${themeLabel || ""}` : ` - ${typeConduiteLabel || ""}`}`}
-              size="small"
-              color={type === "Code" ? "primary" : "secondary"}
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
+        </Stack>
+
+        <Stack direction={{ xs: "row", sm: "column" }} spacing={1} alignItems={{ xs: "center", sm: "flex-end" }} justifyContent="space-between" sx={{ width: { xs: "100%", sm: "auto" } }}>
+          <Chip
+            label={`${type}${type === "Code" ? ` · ${themeLabel || ""}` : ` · ${typeConduiteLabel || ""}`}`}
+            size="small"
+            color={type === "Code" ? "primary" : "secondary"}
+            sx={{ fontWeight: 600, borderRadius: 2 }}
+          />
           {montant && (
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Montant
-              </Typography>
-              <Typography variant="body2" fontWeight={600} color="primary.main">
-                {montant} DT
-              </Typography>
-            </Box>
+            <Typography variant="body2" fontWeight={800} color="primary.main" mt={{ sm: 0.5 }}>
+              {montant} DT
+            </Typography>
           )}
         </Stack>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="flex-end" sx={{ width: { xs: "100%", sm: "auto" }, mt: { xs: 1.5, sm: 0 } }}>
           {status === "Effectuée" && presence && (
             <Chip
               label={presence}
               color={presence.includes("Présent") ? "success" : "warning"}
               size="small"
-              sx={{ fontWeight: 600 }}
+              sx={{ fontWeight: 600, borderRadius: 2 }}
             />
           )}
           {status !== "Confirmée" && status !== "Effectuée" && (
@@ -289,7 +290,8 @@ const SessionsCandidat = () => {
               label={status}
               color={status === "Annulée" ? "error" : "default"}
               variant="outlined"
-              sx={{ fontWeight: 600 }}
+              size="small"
+              sx={{ fontWeight: 600, borderRadius: 2 }}
             />
           )}
           {status === "Confirmée" && (
@@ -297,7 +299,7 @@ const SessionsCandidat = () => {
               label="À venir"
               color="info"
               size="small"
-              sx={{ fontWeight: 600 }}
+              sx={{ fontWeight: 600, borderRadius: 2 }}
             />
           )}
           {canCancel && (
@@ -307,7 +309,7 @@ const SessionsCandidat = () => {
               size="small"
               onClick={() => onCancel(rawSession)}
               disabled={isCancelling}
-              sx={{ borderRadius: 2, textTransform: "none", minWidth: 90 }}
+              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700, minWidth: 90 }}
             >
               {isCancelling ? <CircularProgress size={16} color="inherit" /> : "Annuler"}
             </Button>
@@ -326,38 +328,64 @@ const SessionsCandidat = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: "0 auto", p: { xs: 2, md: 4 } }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
-        <Typography variant="h4" fontWeight={800}>
-          Mes Séances
-        </Typography>
-        <Paper sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderRadius: 2 }}>
-          <Stack direction="row" spacing={4} flexWrap="wrap" divider={<Divider orientation="vertical" flexItem />}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">Heures de code effectuées</Typography>
-              <Typography variant="h6" fontWeight={800}>{totalCodeSessions} h </Typography>
-              <Stack direction="row" spacing={1} mt={0.5}>
-                <Chip label={`Présent: ${codePresentCount}`} size="small" color="success" variant="outlined" />
-                <Chip label={`Absent: ${codeAbsentCount}`} size="small" color="warning" variant="outlined" />
-              </Stack>
-           
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">Heures Conduite effectuées</Typography>
-              <Typography variant="h6" fontWeight={800}>{totalConduiteSessions}h</Typography>
-              <Stack direction="row" spacing={1} mt={0.5}>
-                <Chip label={`Présent: ${conduitePresentCount}`} size="small" color="success" variant="outlined" />
-                <Chip label={`Absent: ${conduiteAbsentCount}`} size="small" color="warning" variant="outlined" />
-              </Stack>
-              
-            </Box>
-          </Stack>
+    <Box sx={{ maxWidth: 800, margin: "0 auto", width: "100%" }}>
+      {/* Header & Stats in Column Stack */}
+      <Stack direction="column" spacing={3} mb={4}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h4" fontWeight={800}>
+            Mes Séances
+          </Typography>
+        </Stack>
+
+        <Paper 
+          elevation={0}
+          sx={{ 
+            p: 3, 
+            borderRadius: 4, 
+            border: "1px solid", 
+            borderColor: "divider",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+            bgcolor: "background.paper",
+            width: "100%"
+          }}
+        >
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                  Heures de code effectuées
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="primary.main">
+                  {totalCodeSessions} h
+                </Typography>
+                <Stack direction="row" spacing={1} mt={1}>
+                  <Chip label={`Présent: ${codePresentCount}`} size="small" color="success" variant="outlined" sx={{ fontWeight: 600 }} />
+                  <Chip label={`Absent: ${codeAbsentCount}`} size="small" color="warning" variant="outlined" sx={{ fontWeight: 600 }} />
+                </Stack>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                  Heures Conduite effectuées
+                </Typography>
+                <Typography variant="h5" fontWeight={800} color="secondary.main">
+                  {totalConduiteSessions} h
+                </Typography>
+                <Stack direction="row" spacing={1} mt={1}>
+                  <Chip label={`Présent: ${conduitePresentCount}`} size="small" color="success" variant="outlined" sx={{ fontWeight: 600 }} />
+                  <Chip label={`Absent: ${conduiteAbsentCount}`} size="small" color="warning" variant="outlined" sx={{ fontWeight: 600 }} />
+                </Stack>
+              </Box>
+            </Grid>
+          </Grid>
         </Paper>
       </Stack>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      <Paper elevation={0} sx={{ borderRadius: 4, mb: 4, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+      <Paper elevation={0} sx={{ borderRadius: 4, mb: 4, overflow: "hidden", border: "1px solid", borderColor: "divider", boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
         <Tabs
           value={tab}
           onChange={(e, v) => setTab(v)}
@@ -368,7 +396,7 @@ const SessionsCandidat = () => {
             borderColor: "divider",
             "& .MuiTab-root": {
               textTransform: "none",
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: 15,
               minHeight: 48,
             },
@@ -379,7 +407,7 @@ const SessionsCandidat = () => {
           <Tab label={`Annulées (${cancelledSessions.length})`} />
         </Tabs>
 
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
           {tab === 0 ? (
             upcomingSessions.length > 0 ? (
               upcomingSessions.map((s) => (
@@ -393,7 +421,7 @@ const SessionsCandidat = () => {
                 />
               ))
             ) : (
-              <Typography color="text.secondary" textAlign="center" py={4}>
+              <Typography color="text.secondary" textAlign="center" py={4} fontWeight={500}>
                 Aucune séance à venir.
               </Typography>
             )
@@ -407,7 +435,7 @@ const SessionsCandidat = () => {
                 />
               ))
             ) : (
-              <Typography color="text.secondary" textAlign="center" py={4}>
+              <Typography color="text.secondary" textAlign="center" py={4} fontWeight={500}>
                 Aucun historique de séance.
               </Typography>
             )
@@ -421,33 +449,33 @@ const SessionsCandidat = () => {
                 />
               ))
             ) : (
-              <Typography color="text.secondary" textAlign="center" py={4}>
+              <Typography color="text.secondary" textAlign="center" py={4} fontWeight={500}>
                 Aucune séance annulée.
               </Typography>
             )
           )}
         </Box>
       </Paper>
+
       {/* Dialogue de confirmation d'annulation */}
       <Dialog 
         open={cancelDialogOpen} 
         onClose={() => !cancellingId && setCancelDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: 3, width: "100%", maxWidth: 450 } }}
+        PaperProps={{ sx: { borderRadius: 4, width: "100%", maxWidth: 450, p: 1 } }}
       >
         <DialogTitle sx={{ fontWeight: 800, pt: 3 }}>
           Confirmer l'annulation
         </DialogTitle>
         <DialogContent>
-          <Typography color="text.secondary" mb={2}>
+          <Typography color="text.secondary">
             Êtes-vous sûr de vouloir annuler votre séance de <strong>{sessionToCancel?.type}</strong> prévue le <strong>{sessionToCancel?.date}</strong> à <strong>{sessionToCancel?.heureDebut}</strong> ?
           </Typography>
-       
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button 
             onClick={() => setCancelDialogOpen(false)} 
             disabled={cancellingId}
-            sx={{ textTransform: "none", fontWeight: 600 }}
+            sx={{ textTransform: "none", fontWeight: 700 }}
           >
             Retour
           </Button>
@@ -458,12 +486,12 @@ const SessionsCandidat = () => {
             disabled={cancellingId}
             sx={{ 
               textTransform: "none", 
-              fontWeight: 600, 
+              fontWeight: 700, 
               borderRadius: 2,
               minWidth: 120
             }}
           >
-            {cancellingId ? <CircularProgress size={20} color="inherit" /> : "Confirmer l'annulation"}
+            {cancellingId ? <CircularProgress size={20} color="inherit" /> : "Confirmer"}
           </Button>
         </DialogActions>
       </Dialog>

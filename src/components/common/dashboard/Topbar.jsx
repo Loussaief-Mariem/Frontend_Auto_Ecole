@@ -19,24 +19,38 @@ import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import Button from "@mui/material/Button";
 import {
   getAuthDisplayName,
   getAutoEcoleNom,
   getRoleLabel,
 } from "../../../utils/dashboardUserLabels";
+import { blueGradients } from "../../../theme/muiTheme";
 
-const Topbar = ({ onToggleSidebar }) => {
+const Topbar = ({ onToggleSidebar, hideToggle }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
+  console.log(user);  
+  // Navigation for Candidat
+  const candidatMenu = [
+    { text: "Accueil", path: "/dashboard/candidat" },
+    { text: "Mes séances", path: "/dashboard/candidat/seances" },
+    { text: "Mes examens", path: "/dashboard/candidat/examens" },
+    { text: "Mes paiements", path: "/dashboard/candidat/finances" },
+    { text: "Espace Entraînement", path: "/dashboard/candidat/tests" },
+  ];
 
   const roleLabel = useMemo(() => getRoleLabel(user?.role) || "Dashboard", [user?.role]);
   const displayName = useMemo(() => getAuthDisplayName(user), [user]);
   const autoEcoleNom = useMemo(() => getAutoEcoleNom(user), [user]);
-
+console.log(displayName);
+console.log(autoEcoleNom);
+console.log(user.autoEcoleNom);
   const handleProfileClick = () => {
     handleCloseMenu();
     if (user?.role === "Candidat") {
@@ -82,30 +96,61 @@ const Topbar = ({ onToggleSidebar }) => {
           alignItems="center"
           sx={{ flex: 1 }}
         >
-          <IconButton
-            onClick={onToggleSidebar}
-            sx={{ display: { xs: "inline-flex", lg: "none" } }}
-            color="primary"
-          >
-            <MenuRoundedIcon />
-          </IconButton>
+          {!hideToggle && (
+            <IconButton
+              onClick={onToggleSidebar}
+              sx={{ display: { xs: "inline-flex", lg: "none" } }}
+              color="primary"
+            >
+              <MenuRoundedIcon />
+            </IconButton>
+          )}
 
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h6" fontWeight={700} lineHeight={1.1} noWrap>
-              AutoPilot
+            <Typography variant="h6" fontWeight={850} lineHeight={1.2} noWrap color="primary.main">
+              {displayName || "AutoPilot"}
             </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" noWrap>
-              {displayName ? `${displayName} · ${roleLabel}` : `Espace ${roleLabel}`}
+            <Typography variant="caption" color="text.secondary" display="block" noWrap fontWeight={600}>
+              {user?.role === "Candidat" 
+                ? (autoEcoleNom ? (autoEcoleNom.toLowerCase().startsWith("auto") ? autoEcoleNom : `Auto-École ${autoEcoleNom}`) : "Espace Candidat") 
+                : `${roleLabel}${autoEcoleNom ? ` · Auto-École ${autoEcoleNom}` : ""}`}
             </Typography>
-            {autoEcoleNom ? (
-              <Typography variant="caption" color="text.secondary" display="block" noWrap>
-                {autoEcoleNom}
-              </Typography>
-            ) : null}
           </Box>
         </Stack>
 
-
+        {user?.role === "Candidat" && (
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ display: { xs: "none", md: "flex" }, flex: 2, justifyContent: "center" }}
+          >
+            {candidatMenu.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Button
+                  key={item.text}
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    color: isActive ? "primary.main" : "text.secondary",
+                    fontWeight: isActive ? 800 : 500,
+                    borderBottom: isActive ? "2px solid" : "none",
+                    borderColor: "primary.main",
+                    borderRadius: 0,
+                    textTransform: "none",
+                    px: 2,
+                    py: 1,
+                    '&:hover': {
+                      backgroundColor: "transparent",
+                      color: "primary.main",
+                    }
+                  }}
+                >
+                  {item.text}
+                </Button>
+              );
+            })}
+          </Stack>
+        )}
 
         <Stack direction="row" spacing={1} alignItems="center">
 
@@ -152,6 +197,19 @@ const Topbar = ({ onToggleSidebar }) => {
               Mon profil
             </MenuItem>
           )}
+
+          {user?.role === "Candidat" && candidatMenu.map((item) => (
+            <MenuItem
+              key={item.text}
+              onClick={() => {
+                handleCloseMenu();
+                navigate(item.path);
+              }}
+              sx={{ display: { md: "none" } }}
+            >
+              {item.text}
+            </MenuItem>
+          ))}
 
           {user?.role === "Proprietaire" && [
             <MenuItem

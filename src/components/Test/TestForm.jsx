@@ -8,67 +8,68 @@ import {
   Typography, 
   Paper,
   Grid,
-  MenuItem
+  MenuItem,
+  useTheme,
+  alpha
 } from '@mui/material';
 import { ThemeCode, THEME_CODE_LABELS } from '../../enums';
 
 const TestForm = ({ initialData, onSubmit, onCancel, loading }) => {
+  const theme = useTheme();
+  
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: initialData || {
       titre: '',
       theme: ThemeCode.Signalisation,
-      dureeMinutes: 40,
       nombreQuestions: 40,
       seuilReussite: 80
     }
   });
 
   return (
-    <Paper elevation={0} sx={{ p: 1 }}>
-      <Typography variant="h6" gutterBottom>
-        {initialData ? "Modifier le Test" : "Créer un nouveau Test"}
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        p: 3, 
+        borderRadius: 4, 
+        border: '1px solid', 
+        borderColor: 'divider',
+        bgcolor: 'background.paper'
+      }}
+    >
+      <Typography variant="h6" fontWeight={800} color="primary.main" gutterBottom sx={{ mb: 3 }}>
+        {initialData ? "Modifier le Test Blanc" : "Créer une nouvelle série d'entraînement"}
       </Typography>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={3}>
           <TextField
-            label="Titre du Test"
+            label="Titre de la Série"
             fullWidth
             {...register('titre', { required: 'Le titre est requis' })}
             error={!!errors.titre}
             helperText={errors.titre?.message}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
           />
 
           <TextField
             select
-            label="Thème"
+            label="Thème principal"
             fullWidth
             {...register('theme', { required: 'Le thème est requis', valueAsNumber: true })}
             defaultValue={initialData?.theme ?? ThemeCode.Signalisation}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
           >
             {Object.entries(ThemeCode).map(([name, id]) => (
-              <MenuItem key={id} value={id}>
+              <MenuItem key={id} value={id} sx={{ fontWeight: 600 }}>
                 {THEME_CODE_LABELS[id]?.label || name}
               </MenuItem>
             ))}
           </TextField>
 
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <TextField
-                label="Durée (min)"
-                type="number"
-                fullWidth
-                {...register('dureeMinutes', { 
-                  required: 'Requis',
-                  min: { value: 10, message: 'Min 10' },
-                  max: { value: 120, message: 'Max 120' }
-                })}
-                error={!!errors.dureeMinutes}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                label="Questions"
+                label="Nombre total de questions"
                 type="number"
                 fullWidth
                 {...register('nombreQuestions', { 
@@ -77,11 +78,13 @@ const TestForm = ({ initialData, onSubmit, onCancel, loading }) => {
                   max: { value: 100, message: 'Max 100' }
                 })}
                 error={!!errors.nombreQuestions}
+                helperText={errors.nombreQuestions?.message}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <TextField
-                label="Réussite (%)"
+                label="Seuil de réussite (%)"
                 type="number"
                 fullWidth
                 {...register('seuilReussite', { 
@@ -90,17 +93,32 @@ const TestForm = ({ initialData, onSubmit, onCancel, loading }) => {
                   max: { value: 100, message: 'Max 100' }
                 })}
                 error={!!errors.seuilReussite}
+                helperText={errors.seuilReussite?.message}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
               />
             </Grid>
           </Grid>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-            <Button variant="outlined" onClick={onCancel}>Annuler</Button>
+            <Button 
+              variant="outlined" 
+              onClick={onCancel}
+              sx={{ borderRadius: 3, px: 3, fontWeight: 700, textTransform: 'none' }}
+            >
+              Annuler
+            </Button>
             <Button 
               type="submit" 
               variant="contained" 
               disabled={loading}
-              sx={{ minWidth: 120 }}
+              sx={{ 
+                borderRadius: 3, 
+                px: 4, 
+                fontWeight: 700, 
+                textTransform: 'none',
+                boxShadow: 'none',
+                '&:hover': { boxShadow: 'none' }
+              }}
             >
               {loading ? "Enregistrement..." : "Enregistrer"}
             </Button>

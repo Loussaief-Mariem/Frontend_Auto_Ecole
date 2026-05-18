@@ -5,262 +5,524 @@ import {
   Stack,
   Typography,
   Box,
-  LinearProgress,
   Chip,
   Button,
   CircularProgress,
   Alert,
+  Divider,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import PriceChangeOutlinedIcon from "@mui/icons-material/PriceChangeOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import DirectionsCarOutlinedIcon from "@mui/icons-material/DirectionsCarOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
+import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+
 import DashboardUserMeta from "../../../components/common/dashboard/DashboardUserMeta";
 import { useAuth } from "../../../context/AuthContext";
-import { getPlanningMoniteurByDate } from "../../../api/seanceConduiteService";
-import { format } from "date-fns";
+import useDashboardStats from "../../../hooks/useDashboardStats";
 
-const StatCard = ({ title, value, icon, hint }) => (
+// Palette bleue cohérente avec muiTheme.js
+const BLUE = {
+  900: "#1e3a8a",
+  800: "#1e40af",
+  700: "#1d4ed8",
+  600: "#2563eb",
+  500: "#3b82f6",
+  100: "#dbeafe",
+  50:  "#eff6ff",
+};
+
+// ── KPI Card ─────────────────────────────────────────────────────────────────
+const StatCard = ({ title, value, subtitle, icon, dark = false, loading }) => (
   <Paper
+    elevation={0}
     sx={{
-      p: 2.5,
+      p: 3,
       borderRadius: 3,
+      height: "100%",
       border: "1px solid",
-      borderColor: "divider",
-      boxShadow: "0 8px 24px rgba(37,99,235,0.08)",
+      borderColor: dark ? BLUE[700] : BLUE[100],
+      bgcolor: dark ? BLUE[800] : BLUE[50],
+      color: dark ? "#fff" : "text.primary",
+      position: "relative",
+      overflow: "hidden",
+      transition: "box-shadow .2s, transform .2s",
+      "&:hover": {
+        boxShadow: "0 8px 32px rgba(37,99,235,0.15)",
+        transform: "translateY(-2px)",
+      },
     }}
   >
-    <Stack direction="row" justifyContent="space-between" alignItems="center">
+    {/* Cercle décoratif */}
+    <Box
+      sx={{
+        position: "absolute",
+        top: -24,
+        right: -24,
+        width: 96,
+        height: 96,
+        borderRadius: "50%",
+        bgcolor: dark ? "rgba(255,255,255,0.07)" : BLUE[100],
+        pointerEvents: "none",
+      }}
+    />
+
+    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
       <Box>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          fontWeight={500}
+          sx={{ color: dark ? "rgba(255,255,255,0.75)" : "text.secondary" }}
+        >
           {title}
         </Typography>
-        <Typography variant="h5" fontWeight={700}>
-          {value}
-        </Typography>
+        {loading ? (
+          <CircularProgress size={22} sx={{ mt: 0.75, color: dark ? "#fff" : BLUE[600] }} />
+        ) : (
+          <Typography
+            variant="h4"
+            fontWeight={800}
+            lineHeight={1.1}
+            mt={0.5}
+            sx={{ color: dark ? "#fff" : BLUE[800] }}
+          >
+            {value}
+          </Typography>
+        )}
       </Box>
+
       <Box
         sx={{
-          width: 44,
-          height: 44,
-          borderRadius: 2,
+          width: 46,
+          height: 46,
+          borderRadius: 2.5,
           display: "grid",
           placeItems: "center",
-          color: "primary.main",
-          bgcolor: "primary.50",
+          bgcolor: dark ? "rgba(255,255,255,0.15)" : BLUE[100],
+          color: dark ? "#fff" : BLUE[700],
+          flexShrink: 0,
         }}
       >
         {icon}
       </Box>
     </Stack>
-    <Typography
-      variant="caption"
-      color="text.secondary"
-      sx={{ mt: 1, display: "block" }}
-    >
-      {hint}
-    </Typography>
+
+    {subtitle && (
+      <Typography
+        variant="caption"
+        display="block"
+        mt={1.25}
+        sx={{ color: dark ? "rgba(255,255,255,0.6)" : "text.secondary" }}
+      >
+        {subtitle}
+      </Typography>
+    )}
   </Paper>
 );
 
-const HomeProprietaire = () => {
-  const { user } = useAuth();
-  const [todaySessions, setTodaySessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// ── Session row ───────────────────────────────────────────────────────────────
+const SeanceRow = ({ session }) => {
+  const isAnnulee  = session.estAnnulee;
+  const isEffectuee = !isAnnulee && session.estEffectuee;
+  const isPlanifiee = !isAnnulee && !isEffectuee;
 
-  useEffect(() => {
-    const fetchTodaySessions = async () => {
-      try {
-        const moniteurId = user?.id; // Assuming owner can also be a monitor or we fetch for the owner's related monitors
-        if (!moniteurId) return;
+  const borderColor = isAnnulee  ? "#ef4444"
+                    : isEffectuee ? "#22c55e"
+                    : BLUE[600];
 
-        const today = format(new Date(), "yyyy-MM-dd");
-        const data = await getPlanningMoniteurByDate(moniteurId, today);
-        setTodaySessions(data);
-      } catch (err) {
-        console.error("Error fetching sessions:", err);
-        setError("Erreur lors de la récupération des séances.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const timeboxBg  = isAnnulee  ? "#fef2f2"
+                    : isEffectuee ? "#f0fdf4"
+                    : BLUE[50];
 
-    fetchTodaySessions();
-  }, [user]);
+  const timeColor  = isAnnulee  ? "#ef4444"
+                    : isEffectuee ? "#16a34a"
+                    : BLUE[700];
+
+  const statusCfg = isAnnulee
+    ? { label: "Annulée",  color: "error",   icon: <CancelRoundedIcon fontSize="small" />,        variant: "filled" }
+    : isEffectuee
+    ? { label: "Terminée", color: "success",  icon: <CheckCircleRoundedIcon fontSize="small" />,   variant: "filled" }
+    : { label: "Planifiée",color: "primary",  icon: <ScheduleRoundedIcon fontSize="small" />,      variant: "outlined" };
+
+  const typeEmoji =
+    session.typeConduite === "Ville"      ? "🏙️"
+    : session.typeConduite === "Route"    ? "🛣️"
+    : session.typeConduite === "Autoroute"? "🛤️"
+    : "🚗";
 
   return (
-    <Grid container spacing={2.5}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        px: 2,
+        py: 1.5,
+        borderRadius: 2.5,
+        border: "1px solid",
+        borderColor: `${borderColor}40`,
+        borderLeft: "4px solid",
+        borderLeftColor: borderColor,
+        bgcolor: isAnnulee ? "#fef2f2" : "#fff",
+        opacity: isAnnulee ? 0.75 : 1,
+        transition: "box-shadow .15s",
+        "&:hover": { boxShadow: "0 4px 16px rgba(37,99,235,0.09)" },
+      }}
+    >
+      {/* Bloc heure */}
+      <Box
+        sx={{
+          minWidth: 68,
+          textAlign: "center",
+          py: 0.75,
+          px: 1,
+          borderRadius: 2,
+          bgcolor: timeboxBg,
+          flexShrink: 0,
+        }}
+      >
+        <Typography variant="caption" fontWeight={800} display="block" sx={{ color: timeColor }}>
+          {session.heureDebut}
+        </Typography>
+        <Divider sx={{ my: 0.25, borderColor: `${timeColor}30` }} />
+        <Typography variant="caption" display="block" sx={{ color: `${timeColor}99` }}>
+          {session.heureFin}
+        </Typography>
+      </Box>
+
+      {/* Candidat + type */}
+      <Box flex={1} minWidth={0}>
+        <Typography variant="subtitle2" fontWeight={700} noWrap>
+          {session.candidatNom} {session.candidatPrenom}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {typeEmoji} {session.typeConduite}
+        </Typography>
+      </Box>
+
+      {/* Statut */}
+      <Chip
+        icon={statusCfg.icon}
+        label={statusCfg.label}
+        size="small"
+        color={statusCfg.color}
+        variant={statusCfg.variant}
+        sx={{ fontWeight: 600, flexShrink: 0 }}
+      />
+    </Box>
+  );
+};
+
+// ── Page principale ───────────────────────────────────────────────────────────
+const HomeProprietaire = () => {
+  const { user } = useAuth();
+  const { stats, loading, error, refetch } = useDashboardStats(user?.autoEcoleId);
+
+  const todayLabel = format(new Date(), "EEEE dd MMMM yyyy", { locale: fr });
+  const seancesToday   = stats?.seancesProprietaireDetail ?? [];
+  const nbPlanifiees   = seancesToday.filter((s) => !s.estAnnulee && !s.estEffectuee).length;
+  const nbTerminees    = seancesToday.filter((s) => s.estEffectuee && !s.estAnnulee).length;
+
+  return (
+    <Grid container spacing={3}>
+      {/* ── En-tête ──────────────────────────────────────────────────── */}
       <Grid item xs={12}>
         <Stack
-          direction={{ xs: "column", md: "row" }}
+          direction={{ xs: "column", sm: "row" }}
           justifyContent="space-between"
-          alignItems={{ xs: "flex-start", md: "center" }}
-          spacing={1}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          spacing={1.5}
         >
           <Box>
-            <Typography variant="h4" fontWeight={800}>
-              Dashboard Propriétaire
+            <Typography variant="h4" fontWeight={800} color={BLUE[900]}>
+              Tableau de bord
             </Typography>
-            <Typography color="text.secondary">
-              Vue globale de votre auto-école AutoPilot.
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              textTransform="capitalize"
+              mt={0.25}
+            >
+              {todayLabel}
             </Typography>
             <DashboardUserMeta />
           </Box>
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            flexWrap="wrap"
-          >
-            <Button
-              component={RouterLink}
-              to="/dashboard/proprietaire/profile"
-              variant="outlined"
-              color="primary"
-              startIcon={<PersonOutlineIcon />}
-            >
-              Mon profil
-            </Button>
-            <Chip
-              icon={<TrendingUpRoundedIcon />}
-              color="primary"
-              label="Performance +12%"
-            />
+
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Tooltip title="Rafraîchir">
+              <IconButton onClick={refetch} size="small" disabled={loading}>
+                <RefreshRoundedIcon
+                  fontSize="small"
+                  sx={{
+                    color: BLUE[600],
+                    animation: loading ? "spin 1s linear infinite" : "none",
+                    "@keyframes spin": {
+                      from: { transform: "rotate(0deg)" },
+                      to: { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
           </Stack>
         </Stack>
       </Grid>
 
-      <Grid item xs={12} md={6} lg={3}>
+      {/* ── Erreur ───────────────────────────────────────────────────── */}
+      {error && (
+        <Grid item xs={12}>
+          <Alert severity="error">{error}</Alert>
+        </Grid>
+      )}
+
+      {/* ── KPI — ligne 1 ────────────────────────────────────────────── */}
+      <Grid item xs={12} sm={6} lg={3}>
         <StatCard
+          loading={loading}
+          dark
           title="Comptes actifs"
-          value="48"
+          value={stats?.comptesActifs ?? "–"}
+          subtitle="Moniteurs + secrétaires"
           icon={<Groups2OutlinedIcon />}
-          hint="Moniteurs + secrétaires"
-        />
-      </Grid>
-      <Grid item xs={12} md={6} lg={3}>
-        <StatCard
-          title="Séances aujourd'hui"
-          value={todaySessions.length}
-          icon={<EventAvailableOutlinedIcon />}
-          hint={`${todaySessions.filter((s) => !s.estEffectuee).length} séances restantes`}
-        />
-      </Grid>
-      <Grid item xs={12} md={6} lg={3}>
-        <StatCard
-          title="Revenu mensuel"
-          value="24 500 TND"
-          icon={<PriceChangeOutlinedIcon />}
-          hint="Objectif mensuel en cours"
-        />
-      </Grid>
-      <Grid item xs={12} md={6} lg={3}>
-        <StatCard
-          title="Occupation planning"
-          value="82%"
-          icon={<CalendarMonthOutlinedIcon />}
-          hint="Créneaux optimisés"
         />
       </Grid>
 
-      <Grid item xs={12} md={7}>
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Séances de conduite aujourd'hui ({format(new Date(), "dd/MM/yyyy")})
-          </Typography>
+      <Grid item xs={12} sm={6} lg={3}>
+        <StatCard
+          loading={loading}
+          title="Candidats actifs"
+          value={stats?.candidatsActifs ?? "–"}
+          subtitle="Contrats en cours"
+          icon={<PeopleAltOutlinedIcon />}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6} lg={3}>
+        <StatCard
+          loading={loading}
+          title="Séances conduite"
+          value={stats?.seancesConduiteAujourdhui ?? "–"}
+          subtitle="Planifiées aujourd'hui"
+          icon={<DirectionsCarOutlinedIcon />}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6} lg={3}>
+        <StatCard
+          loading={loading}
+          title="Séances code"
+          value={stats?.seancesCodeAujourdhui ?? "–"}
+          subtitle="Planifiées aujourd'hui"
+          icon={<MenuBookOutlinedIcon />}
+        />
+      </Grid>
+
+      {/* ── Planning du propriétaire ──────────────────────────────────── */}
+      <Grid item xs={12} md={8}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: BLUE[100],
+            height: "100%",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            mb={2}
+            spacing={1}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 2,
+                  bgcolor: BLUE[100],
+                  display: "grid",
+                  placeItems: "center",
+                  color: BLUE[700],
+                }}
+              >
+                <DirectionsCarOutlinedIcon />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={700} color={BLUE[900]}>
+                  Mes séances de conduite
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {format(new Date(), "dd MMMM yyyy", { locale: fr })}
+                </Typography>
+              </Box>
+            </Stack>
+
+            {!loading && seancesToday.length > 0 && (
+              <Stack direction="row" spacing={1}>
+                {nbPlanifiees > 0 && (
+                  <Chip
+                    icon={<ScheduleRoundedIcon />}
+                    label={`${nbPlanifiees} planifiée${nbPlanifiees > 1 ? "s" : ""}`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+                {nbTerminees > 0 && (
+                  <Chip
+                    icon={<CheckCircleRoundedIcon />}
+                    label={`${nbTerminees} terminée${nbTerminees > 1 ? "s" : ""}`}
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                  />
+                )}
+              </Stack>
+            )}
+          </Stack>
+
+          <Divider sx={{ mb: 2, borderColor: BLUE[100] }} />
 
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-              <CircularProgress size={24} />
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress sx={{ color: BLUE[600] }} />
             </Box>
-          ) : error ? (
-            <Alert severity="error">{error}</Alert>
-          ) : todaySessions.length === 0 ? (
-            <Typography color="text.secondary">
-              Aucune séance de conduite prévue pour aujourd'hui.
-            </Typography>
+          ) : seancesToday.length === 0 ? (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 6,
+                borderRadius: 2.5,
+                bgcolor: BLUE[50],
+                border: "1px dashed",
+                borderColor: BLUE[100],
+              }}
+            >
+              <AccessTimeRoundedIcon sx={{ fontSize: 44, color: BLUE[200] ?? "#bfdbfe", mb: 1 }} />
+              <Typography variant="subtitle1" fontWeight={600} color={BLUE[800]}>
+                Aucune séance prévue aujourd'hui
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mt={0.5}>
+                Votre planning est libre pour cette journée.
+              </Typography>
+            </Box>
           ) : (
             <Stack spacing={1.25}>
-              {todaySessions.map((session) => (
-                <Box
-                  key={session.id}
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    bgcolor: session.estAnnulee
-                      ? "action.hover"
-                      : "background.default",
-                    borderLeft: "4px solid",
-                    borderColor: session.estAnnulee
-                      ? "error.main"
-                      : session.estEffectuee
-                        ? "success.main"
-                        : "primary.main",
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        {session.heureDebut.substring(0, 5)} -{" "}
-                        {session.heureFin.substring(0, 5)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Candidat:{" "}
-                        <strong>
-                          {session.candidatNom} {session.candidatPrenom}
-                        </strong>
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={
-                        session.estAnnulee
-                          ? "Annulée"
-                          : session.estEffectuee
-                            ? "Terminée"
-                            : "En cours"
-                      }
-                      size="small"
-                      color={
-                        session.estAnnulee
-                          ? "error"
-                          : session.estEffectuee
-                            ? "success"
-                            : "primary"
-                      }
-                      variant="outlined"
-                    />
-                  </Stack>
-                </Box>
+              {seancesToday.map((s) => (
+                <SeanceRow key={s.id} session={s} />
               ))}
             </Stack>
           )}
         </Paper>
       </Grid>
 
-      <Grid item xs={12} md={5}>
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Alertes rapides
-          </Typography>
-          <Stack spacing={1.5}>
-            <Typography variant="body2" color="text.secondary">
-              - 3 paiements en attente de validation.
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              - 2 moniteurs sans planning demain.
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              - 5 candidats proches de l’examen final.
-            </Typography>
-          </Stack>
+      {/* ── Revenu mensuel ────────────────────────────────────────────── */}
+      <Grid item xs={12} md={4}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: BLUE[100],
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 3,
+          }}
+        >
+          {/* Revenu */}
+          <Box>
+            <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 2,
+                  bgcolor: BLUE[100],
+                  display: "grid",
+                  placeItems: "center",
+                  color: BLUE[700],
+                }}
+              >
+                <PriceChangeOutlinedIcon />
+              </Box>
+              <Typography variant="body2" fontWeight={500} color="text.secondary">
+                Revenu ce mois
+              </Typography>
+            </Stack>
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: BLUE[600] }} />
+            ) : (
+              <Typography variant="h5" fontWeight={800} color={BLUE[800]}>
+                {Number(stats?.revenuMensuel ?? 0).toLocaleString("fr-TN")}{" "}
+                <Typography component="span" variant="body1" fontWeight={600} color="text.secondary">
+                  TND
+                </Typography>
+              </Typography>
+            )}
+          </Box>
+
+          <Divider sx={{ borderColor: BLUE[100] }} />
+
+          {/* Total séances */}
+          <Box>
+            <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 2,
+                  bgcolor: BLUE[100],
+                  display: "grid",
+                  placeItems: "center",
+                  color: BLUE[700],
+                }}
+              >
+                <EventAvailableOutlinedIcon />
+              </Box>
+              <Typography variant="body2" fontWeight={500} color="text.secondary">
+                Total séances aujourd'hui
+              </Typography>
+            </Stack>
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: BLUE[600] }} />
+            ) : (
+              <Typography variant="h5" fontWeight={800} color={BLUE[800]}>
+                {(stats?.seancesConduiteAujourdhui ?? 0) + (stats?.seancesCodeAujourdhui ?? 0)}
+              </Typography>
+            )}
+            <Stack direction="row" spacing={1} mt={1}>
+              <Chip
+                size="small"
+                icon={<DirectionsCarOutlinedIcon />}
+                label={`${stats?.seancesConduiteAujourdhui ?? 0} conduite`}
+                sx={{ bgcolor: BLUE[50], color: BLUE[700], borderColor: BLUE[100], border: "1px solid" }}
+              />
+              <Chip
+                size="small"
+                icon={<MenuBookOutlinedIcon />}
+                label={`${stats?.seancesCodeAujourdhui ?? 0} code`}
+                sx={{ bgcolor: BLUE[50], color: BLUE[700], borderColor: BLUE[100], border: "1px solid" }}
+              />
+            </Stack>
+          </Box>
         </Paper>
       </Grid>
     </Grid>

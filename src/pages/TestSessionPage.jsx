@@ -33,17 +33,10 @@ const TestSessionPage = () => {
     submitAnswer,
     isFinished,
     result,
-    timeLeft,
+    userAnswers,
+    goPrevious,
+    goNext,
   } = useTest(testId, contratId);
-  // console.log("isFinished", isFinished);
-  // console.log("timeleft", timeLeft);
-  // Helper pour formater le temps
-  const formatTime = (seconds) => {
-    if (seconds === null) return "--:--";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
 
   useEffect(() => {
     startTest();
@@ -102,32 +95,6 @@ const TestSessionPage = () => {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
             {isFinished ? "Résultats" : `Session de Test Blanc`}
           </Typography>
-
-          {!isFinished && timeLeft !== null && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                mr: 3,
-                px: 2,
-                py: 0.5,
-                borderRadius: 2,
-                bgcolor: timeLeft < 60 ? "#fef2f2" : "#f0f9ff",
-                color: timeLeft < 60 ? "#ef4444" : "#0ea5e9",
-                border: "1px solid",
-                borderColor: timeLeft < 60 ? "#fecaca" : "#bae6fd",
-              }}
-            >
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                sx={{ fontFamily: "monospace" }}
-              >
-                {formatTime(timeLeft)}
-              </Typography>
-            </Box>
-          )}
           {!isFinished && (
             <Button
               color="error"
@@ -163,6 +130,9 @@ const TestSessionPage = () => {
             total={totalQuestions}
             onSubmit={submitAnswer}
             isLoading={loading}
+            previouslyAnsweredOptionId={currentQuestion ? (userAnswers[currentQuestion.id] || userAnswers[String(currentQuestion.id)]) : null}
+            onPrevious={goPrevious}
+            onNext={goNext}
           />
         ) : (
           <Box>

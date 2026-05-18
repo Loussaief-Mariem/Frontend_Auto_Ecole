@@ -127,6 +127,10 @@ const CandidatProfilMoniteur = () => {
   const { id } = useParams();
   const { user } = useAuth();
 
+  const moniteurId = user?.user?.id || user?.id || user?.user?.idProprietaire || "";
+  const moniteurPrenom = user?.user?.prenom || user?.prenom || "";
+  const moniteurNom = user?.user?.nom || user?.nom || "";
+
   const [candidat, setCandidat] = useState(null);
   const [seances, setSeances] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -498,45 +502,6 @@ const CandidatProfilMoniteur = () => {
               )}
             </Stack>
           </Grid>
-          <Grid item>
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => {
-                  clearPlanificationMessageError();
-                  setOpenPlanifierForm(true);
-                }}
-                sx={{
-                  bgcolor: "white",
-                  color: "#1e3c72",
-                  "&:hover": { bgcolor: alpha("#fff", 0.9) },
-                  textTransform: "none",
-                  fontWeight: "bold",
-                }}
-              >
-                Planifier 1 séance
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<AddCircleIcon />}
-                onClick={() => setOpenPlanifierBatchForm(true)}
-                sx={{
-                  bgcolor: "white",
-                  color: "#1e3c72",
-                  borderColor: "white",
-                  "&:hover": {
-                    bgcolor: alpha("#fff", 0.9),
-                    borderColor: "white",
-                  },
-                  textTransform: "none",
-                  fontWeight: "bold",
-                }}
-              >
-                Planifier plusieurs
-              </Button>
-            </Stack>
-          </Grid>
         </Grid>
       </Paper>
 
@@ -690,12 +655,7 @@ const CandidatProfilMoniteur = () => {
           <Tab
             icon={<DriveEtaIcon />}
             iconPosition="start"
-            label="Séances de conduite"
-          />
-          <Tab
-            icon={<SchoolIcon />}
-            iconPosition="start"
-            label="Suivi pédagogique"
+            label="Séances & Suivi"
           />
         </Tabs>
 
@@ -740,6 +700,20 @@ const CandidatProfilMoniteur = () => {
                       label: "Date délivrance CIN",
                       value: formatDate(candidat.dateDelivranceCIN),
                     },
+                    {
+                      label: "Date d'obtention code",
+                      value: formatDate(candidat.contrat?.dateObtentionCode),
+                    },
+                    {
+                      label: "Date d'expiration code",
+                      value: candidat.contrat?.dateObtentionCode 
+                        ? (() => {
+                            const d = new Date(candidat.contrat.dateObtentionCode);
+                            d.setMonth(d.getMonth() + 15);
+                            return formatDate(d.toISOString());
+                          })()
+                        : "—",
+                    },
                   ]}
                 />
               </Grid>
@@ -758,12 +732,7 @@ const CandidatProfilMoniteur = () => {
                       value: compte.login || "—",
                       icon: MarkEmailReadIcon,
                     },
-                    { label: "Adresse", value: adresse.rue || "—" },
-                    { label: "Ville", value: adresse.ville || "—" },
-                    {
-                      label: "Gouvernorat",
-                      value: adresse.gouvernorat || "—",
-                    },
+                    { label: "Adresse", value: candidat.adresse || "—" },
                   ]}
                 />
               </Grid>
@@ -771,33 +740,127 @@ const CandidatProfilMoniteur = () => {
           </Box>
         </TabPanel>
 
-        {/* Onglet Séances de conduite */}
+        {/* Onglet Séances & Suivi */}
         <TabPanel value={selectedTab} index={1}>
           <Box sx={{ p: 3 }}>
-            {seances.length === 0 ? (
-              <Alert severity="info">
-                Aucune séance planifiée pour ce candidat.
-              </Alert>
+            {/* ── SÉANCES DE CODE ── */}
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+              Séances de Code (Théoriques)
+            </Typography>
+            {(!candidat?.seancesCode || candidat.seancesCode.length === 0) ? (
+              <Typography color="text.secondary" align="center" sx={{ py: 3, mb: 4 }}>
+                Aucune séance de code planifiée pour ce candidat.
+              </Typography>
             ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table>
+              <TableContainer
+                component={Paper}
+                variant="outlined"
+                sx={{ borderRadius: 2, overflowX: "auto", mb: 5 }}
+              >
+                <Table size="small">
                   <TableHead sx={{ bgcolor: "#f5f5f5" }}>
                     <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Heure</TableCell>
-                      <TableCell>Durée</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Présence</TableCell>
-                      <TableCell>Note</TableCell>
-                      <TableCell align="center">Actions</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Horaire</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Durée</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Thème</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Présence</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Note</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Commentaire du moniteur</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {candidat.seancesCode.map((seance) => {
+                      const presence = seance.presences?.find(p => p.candidatId === parseInt(id));
+                      const note = presence?.noteProgression ?? "—";
+                      const remarque = presence?.remarquesPedagogiques || "—";
+
+                      const statutChip = () => {
+                        if (seance.estAnnulee) return <Chip size="small" color="default" label="Annulée" />;
+                        if (presence?.present) return <Chip size="small" color="success" label="Présent" />;
+                        if (new Date(seance.dateSeance) > new Date()) return <Chip size="small" color="info" label="Planifiée" />;
+                        return <Chip size="small" color="error" label="Absent" />;
+                      };
+
+                      return (
+                        <TableRow
+                          key={seance.id}
+                          hover
+                          sx={{
+                            bgcolor: seance.estAnnulee
+                              ? alpha(theme.palette.error.main, 0.05)
+                              : "inherit",
+                            opacity: seance.estAnnulee ? 0.7 : 1,
+                          }}
+                        >
+                          <TableCell>{formatDate(seance.dateSeance)}</TableCell>
+                          <TableCell>{seance.heureDebut?.substring(0, 5) || "—"}</TableCell>
+                          <TableCell>
+                            <Chip label={`${seance.dureeMinutes ?? seance.nombreHeures * 60} min`} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell>{seance.theme || "—"}</TableCell>
+                          <TableCell>{statutChip()}</TableCell>
+                          <TableCell>
+                            {note !== "—" ? (
+                              <Chip
+                                label={`${note}/10`}
+                                size="small"
+                                color={note >= 7 ? "success" : note >= 4 ? "warning" : "error"}
+                              />
+                            ) : <Typography variant="caption" color="text.secondary">—</Typography>}
+                          </TableCell>
+                          <TableCell sx={{ maxWidth: 200 }}>
+                            <Typography variant="body2" color={remarque === "—" ? "text.disabled" : "text.primary"} sx={{ fontStyle: remarque === "—" ? "italic" : "normal" }}>
+                              {remarque}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+
+            {/* ── SÉANCES DE CONDUITE ── */}
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+              Séances de Conduite (Pratiques)
+            </Typography>
+            {seances.length === 0 ? (
+              <Typography color="text.secondary" align="center" sx={{ py: 3, mb: 4 }}>
+                Aucune séance de conduite planifiée pour ce candidat.
+              </Typography>
+            ) : (
+              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, mb: 5 }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: "#f5f5f5" }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Heure</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Durée</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Présence</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Note</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }} align="center">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {seances.map((seance) => (
-                      <TableRow key={seance.id} hover>
+                      <TableRow
+                        key={seance.id}
+                        hover
+                        sx={{
+                          bgcolor: seance.estAnnulee
+                            ? alpha(theme.palette.error.main, 0.05)
+                            : "inherit",
+                          opacity: seance.estAnnulee ? 0.7 : 1,
+                        }}
+                      >
                         <TableCell>{formatDate(seance.date)}</TableCell>
-                        <TableCell>{seance.heureDebut}</TableCell>
-                        <TableCell>{seance.dureeMinutes} min</TableCell>
+                        <TableCell>{seance.heureDebut?.substring(0, 5) || "—"}</TableCell>
+                        <TableCell>
+                          <Chip label={`${seance.dureeMinutes} min`} size="small" variant="outlined" />
+                        </TableCell>
                         <TableCell>
                           <Chip
                             size="small"
@@ -887,12 +950,8 @@ const CandidatProfilMoniteur = () => {
                 </Table>
               </TableContainer>
             )}
-          </Box>
-        </TabPanel>
 
-        {/* Onglet Suivi pédagogique */}
-        <TabPanel value={selectedTab} index={2}>
-          <Box sx={{ p: 3 }}>
+            {/* ── SUIVI PÉDAGOGIQUE CARDS ── */}
             <Grid container spacing={3}>
               {/* Évolution des notes */}
               <Grid item xs={12}>
@@ -904,7 +963,7 @@ const CandidatProfilMoniteur = () => {
                       color="primary"
                       fontWeight="bold"
                     >
-                      Évolution des notes
+                      Évolution des notes (Pratiques)
                     </Typography>
                     <Divider sx={{ mb: 2 }} />
                     {seances.filter(
@@ -1007,7 +1066,7 @@ const CandidatProfilMoniteur = () => {
           setOpenPlanifierForm(false);
         }}
         onSubmit={handlePlanifierSeance}
-        moniteurId={user?.user?.id}
+        moniteurId={moniteurId}
         candidats={[candidat]}
         initialData={{ candidatId: parseInt(id) }}
         loading={planificationLoading}
@@ -1021,7 +1080,7 @@ const CandidatProfilMoniteur = () => {
         onClose={() => setOpenPlanifierBatchForm(false)}
         onSubmit={handlePlanifierSeancesBatch}
         moniteurs={[
-          { id: user.user.id, prenom: user.user.prenom, nom: user.user.nom },
+          { id: moniteurId, prenom: moniteurPrenom, nom: moniteurNom },
         ]}
         candidats={[candidat]}
         loading={batchPlanificationLoading}

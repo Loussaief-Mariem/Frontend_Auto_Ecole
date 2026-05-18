@@ -47,50 +47,43 @@ const TestsCandidat = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Données statiques pour la démonstration
-    // Tests disponibles avec 6 questions chacun
-    const staticAvailableTests = [
-      { id: 101, titre: "Test Blanc #1", nombreQuestions: 6, themeName: "Général", dureeMinutes: 9 },
-      { id: 102, titre: "Spécial Signalisation", nombreQuestions: 6, themeName: "Signalisation", dureeMinutes: 9 },
-      { id: 103, titre: "Priorités et Croisements", nombreQuestions: 6, themeName: "Priorite", dureeMinutes: 9 },
-      { id: 104, titre: "Conducteur et Véhicule", nombreQuestions: 6, themeName: "ConducteurVehicule", dureeMinutes: 9 },
-      { id: 105, titre: "Stationnement", nombreQuestions: 6, themeName: "ArretStationnement", dureeMinutes: 9 },
-      { id: 106, titre: "Circulation", nombreQuestions: 6, themeName: "Circulation", dureeMinutes: 9 },
-      { id: 107, titre: "Délits", nombreQuestions: 6, themeName: "Delits", dureeMinutes: 9 },
-      { id: 108, titre: "Premiers Secours", nombreQuestions: 6, themeName: "PremiersSecours", dureeMinutes: 9 },
-      { id: 109, titre: "Maintenance", nombreQuestions: 6, themeName: "MaintenanceEnergie", dureeMinutes: 9 },
-      { id: 110, titre: "Transport Matières Dangereuses", nombreQuestions: 6, themeName: "TransportMatieresDangereuses", dureeMinutes: 9 },
-    ];
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [testsRes, historyRes, progressionRes] = await Promise.all([
+          testService.getAllTests(),
+          testService.getHistorique(contratId),
+          testService.getProgression(contratId)
+        ]);
 
-    const staticHistory = [
-      { id: 1, titre: "Test Blanc #1", themeName: "Général", pourcentage: 83, score: 5, totalQuestions: 6, estReussi: true, date: "2025-03-15", meilleurScore: 83 },
-      { id: 2, titre: "Priorités et Croisements", themeName: "Priorite", pourcentage: 67, score: 4, totalQuestions: 6, estReussi: false, date: "2025-03-10", meilleurScore: 67 },
-      { id: 3, titre: "Spécial Signalisation", themeName: "Signalisation", pourcentage: 83, score: 5, totalQuestions: 6, estReussi: true, date: "2025-03-05", meilleurScore: 83 },
-      { id: 4, titre: "Test Blanc #2", themeName: "Général", pourcentage: 100, score: 6, totalQuestions: 6, estReussi: true, date: "2025-02-28", meilleurScore: 100 },
-      { id: 5, titre: "Stationnement", themeName: "ArretStationnement", pourcentage: 50, score: 3, totalQuestions: 6, estReussi: false, date: "2025-03-12", meilleurScore: 50 },
-    ];
-
-    const staticProgression = {
-      moyenneGlobale: 76.6,
-      nombreTests: 5,
-      progressionParTheme: [
-        { theme: "Priorite", score: 67, objectif: 80, meilleurScore: 67 },
-        { theme: "Signalisation", score: 83, objectif: 80, meilleurScore: 83 },
-        { theme: "Général", score: 91.5, objectif: 80, meilleurScore: 100 },
-        { theme: "ArretStationnement", score: 50, objectif: 80, meilleurScore: 50 },
-        { theme: "ConducteurVehicule", score: 0, objectif: 80, meilleurScore: 0 },
-        { theme: "Circulation", score: 0, objectif: 80, meilleurScore: 0 },
-        { theme: "Delits", score: 0, objectif: 80, meilleurScore: 0 },
-        { theme: "PremiersSecours", score: 0, objectif: 80, meilleurScore: 0 },
-        { theme: "MaintenanceEnergie", score: 0, objectif: 80, meilleurScore: 0 },
-        { theme: "TransportMatieresDangereuses", score: 0, objectif: 80, meilleurScore: 0 },
-      ]
+        if (testsRes && testsRes.success) {
+          setAvailableTests(testsRes.data);
+        }
+        if (historyRes && historyRes.success) {
+          setHistory(historyRes.data);
+        }
+        if (progressionRes && progressionRes.success) {
+          // Calculer le champ score pour chaque thème basé sur le dernier score de la liste scores
+          const mappedProgression = {
+            ...progressionRes.data,
+            progressionParTheme: progressionRes.data.progressionParTheme?.map(t => {
+              const lastScore = t.scores && t.scores.length > 0 ? t.scores[t.scores.length - 1] : 0;
+              return {
+                ...t,
+                score: lastScore
+              };
+            }) || []
+          };
+          setProgression(mappedProgression);
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des données de l'espace entraînement", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setAvailableTests(staticAvailableTests);
-    setHistory(staticHistory);
-    setProgression(staticProgression);
-    setLoading(false);
+    fetchDashboardData();
   }, [contratId]);
 
   if (loading) {
@@ -104,7 +97,9 @@ const TestsCandidat = () => {
   // Calcul des statistiques
   const totalTests = progression?.nombreTests || 0;
   const testsReussis = history.filter(t => t.estReussi).length;
-  const meilleurScoreGlobal = Math.max(...(history.map(t => t.meilleurScore || t.pourcentage) || [0]));
+  const meilleurScoreGlobal = history.length > 0 
+    ? Math.max(...(history.map(t => t.pourcentage) || [0])) 
+    : 0;
   const themesFaibles = progression?.progressionParTheme?.filter(t => t.score < 80 && t.score > 0) || [];
   const themesNonTentes = progression?.progressionParTheme?.filter(t => t.score === 0) || [];
 
@@ -127,249 +122,276 @@ const TestsCandidat = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, margin: "0 auto" }}>
-      <Typography variant="h4" gutterBottom fontWeight="800" color="primary" sx={{ mb: 1 }}>
-        Espace Entraînement
-      </Typography>
-      <Typography variant="body1" color="text.secondary" mb={4}>
-        Suivez vos progrès et préparez votre examen du code avec nos tests blancs.
-      </Typography>
+    <Box sx={{ maxWidth: 800, margin: "0 auto", width: "100%" }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+        <Box>
+          <Typography variant="h4" fontWeight={850} color="text.primary" gutterBottom>
+            Espace Entraînement
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Préparez votre examen du code de la route avec nos séries d'entraînement et nos tests blancs.
+          </Typography>
+        </Box>
+      </Stack>
 
-      <Grid container spacing={4}>
+      <Stack spacing={4}>
         {/* Statistiques Rapides & Recommandations */}
-        <Grid item xs={12}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-            {/* Résumé Global */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: 4,
-                border: "1px solid",
-                borderColor: "divider",
-                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-                flex: 1,
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="subtitle1" fontWeight="800" color="primary">
-                    Résumé Global
-                  </Typography>
-                  <Assessment sx={{ color: theme.palette.primary.main, opacity: 0.7 }} />
-                </Stack>
-                
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center', p: 1 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                        <TrendingUp fontSize="small" /> Moyenne
-                      </Typography>
-                      <Typography variant="h4" fontWeight="800" color="primary">
-                        {progression?.moyenneGlobale?.toFixed(1) || 0}%
-                      </Typography>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={progression?.moyenneGlobale || 0} 
-                        sx={{ height: 4, borderRadius: 2, mt: 1, bgcolor: alpha(theme.palette.primary.main, 0.1) }}
-                      />
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center', p: 1 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                        <School fontSize="small" /> Tests passés
-                      </Typography>
-                      <Typography variant="h4" fontWeight="800" color="primary">
-                        {totalTests}
-                      </Typography>
-                      <Typography variant="caption" color="success.main">
-                        {testsReussis} réussis
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-
-                <Divider sx={{ my: 2 }} />
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">Meilleur score</Typography>
-                      <Typography variant="h6" fontWeight="700" color="success.main">
-                        {meilleurScoreGlobal}%
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Paper>
-
-            {/* Recommandations - sans icônes */}
-            <Paper
-              elevation={0}
-              sx={{ p: 3, borderRadius: 4, border: "1px solid", borderColor: "divider", flex: 2 }}
-            >
-              <Typography
-                variant="h6"
-                fontWeight="800"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-              >
-                <Warning color="warning" /> Conseils de révision personnalisés
-              </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
+          {/* Résumé Global */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              border: "1px solid",
+              borderColor: "divider",
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.04)} 0%, ${alpha(theme.palette.primary.main, 0.01)} 100%)`,
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.02)"
+            }}
+          >
+            <Box>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2.5}>
+                <Typography variant="subtitle1" fontWeight="800" color="primary">
+                  Résumé Global
+                </Typography>
+                <Assessment sx={{ color: theme.palette.primary.main, opacity: 0.8 }} />
+              </Stack>
               
-              {/* Thèmes à améliorer (score entre 1 et 79%) */}
-              {themesFaibles.length > 0 && (
-                <>
-                  <Typography variant="subtitle2" fontWeight="600" color="warning.main" sx={{ mb: 1 }}>
-                    Thèmes à améliorer :
-                  </Typography>
-                  <Stack spacing={1.5} sx={{ mb: 2 }}>
-                    {themesFaibles.map((themeItem, i) => (
-                      <Alert key={i} severity="warning" sx={{ borderRadius: 2 }}>
-                        <strong>{getThemeLabel(themeItem.theme)}</strong> - Score actuel : {themeItem.score}% (Objectif : {themeItem.objectif}%)
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: "center", p: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, fontWeight: 600 }}>
+                      <TrendingUp fontSize="inherit" /> Moyenne
+                    </Typography>
+                    <Typography variant="h4" fontWeight={900} color="primary" mt={0.5}>
+                      {progression?.moyenneGlobale ? progression.moyenneGlobale.toFixed(2).replace('.', ',') : "0,00"}%
+                    </Typography>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={progression?.moyenneGlobale || 0} 
+                      sx={{ height: 4, borderRadius: 2, mt: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1) }}
+                    />
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: "center", p: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, fontWeight: 600 }}>
+                      <School fontSize="inherit" /> Tests
+                    </Typography>
+                    <Typography variant="h4" fontWeight={900} color="primary" mt={0.5}>
+                      {totalTests}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
 
-                      </Alert>
-                    ))}
-                  </Stack>
-                </>
-              )}
+              <Divider sx={{ my: 2.5 }} />
 
-              {/* Thèmes non encore testés */}
-              {themesNonTentes.length > 0 && (
-                <>
-                  <Typography variant="subtitle2" fontWeight="600" color="info.main" sx={{ mb: 1, mt: themesFaibles.length > 0 ? 2 : 0 }}>
-                    Thèmes non encore testés :
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {themesNonTentes.map((themeItem, i) => (
-                        <Chip 
-                          key={i}
-                          label={getThemeLabel(themeItem.theme)}
-                          size="small"
-                          variant="outlined"
-                          color="info"
-                        />
-                      ))}
-                    </Box>
-                  </Stack>
-                </>
-              )}
+              <Grid container spacing={2}>
+                <Grid item xs={6} sx={{ borderRight: "1px solid", borderColor: "divider" }}>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                      Meilleur Score
+                    </Typography>
+                    <Typography variant="h5" fontWeight={850} color="success.main" mt={0.5}>
+                      {meilleurScoreGlobal.toFixed(2).replace('.', ',')}%
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                      Tests Réussis
+                    </Typography>
+                    <Typography variant="h5" fontWeight={850} color="success.main" mt={0.5}>
+                      {testsReussis}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+          </Paper>
 
-              {themesFaibles.length === 0 && themesNonTentes.length === 0 && (
-                <Box sx={{ py: 4, textAlign: "center" }}>
-                  <EmojiEvents color="success" sx={{ fontSize: 48, mb: 1, opacity: 0.6 }} />
-                  <Typography variant="body1" fontWeight="600" color="success.main" gutterBottom>
-                    Excellent travail !
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Tous vos thèmes sont maîtrisés à plus de 80%. Continuez à vous entraîner pour maintenir votre niveau.
-                  </Typography>
+          {/* Conseils de révision */}
+          <Paper
+            elevation={0}
+            sx={{ 
+              p: 3, 
+              borderRadius: 4, 
+              border: "1px solid", 
+              borderColor: "divider", 
+              flex: 1.2,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.02)"
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              fontWeight="850"
+              gutterBottom
+              sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5 }}
+            >
+              <Warning color="warning" /> Conseils de révision
+            </Typography>
+            
+            {themesFaibles.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" fontWeight={700} color="warning.main" sx={{ display: "block", mb: 1, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Thèmes prioritaires :
+                </Typography>
+                <Stack spacing={1}>
+                  {themesFaibles.slice(0, 2).map((themeItem, i) => (
+                    <Alert key={i} severity="warning" sx={{ borderRadius: 3, py: 0.5, px: 2, "& .MuiAlert-message": { fontWeight: 600, fontSize: "0.85rem" } }}>
+                      {getThemeLabel(themeItem.theme)} ({themeItem.score.toFixed(2).replace('.', ',')}%)
+                    </Alert>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+
+            {themesNonTentes.length > 0 && (
+              <Box>
+                <Typography variant="caption" fontWeight={700} color="info.main" sx={{ display: "block", mb: 1, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Séries non entamées :
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {themesNonTentes.slice(0, 3).map((themeItem, i) => (
+                    <Chip 
+                      key={i}
+                      label={getThemeLabel(themeItem.theme)}
+                      size="small"
+                      variant="outlined"
+                      color="info"
+                      sx={{ fontWeight: 600, borderRadius: 2 }}
+                    />
+                  ))}
                 </Box>
-              )}
-            </Paper>
-          </Stack>
-        </Grid>
+              </Box>
+            )}
+
+            {themesFaibles.length === 0 && themesNonTentes.length === 0 && (
+              <Box sx={{ py: 3, textAlign: "center" }}>
+                <EmojiEvents color="success" sx={{ fontSize: 40, mb: 1, opacity: 0.8 }} />
+                <Typography variant="body2" fontWeight={700} color="success.main" gutterBottom>
+                  Excellent niveau général !
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Tous vos thèmes ont un score supérieur à 80%. Continuez comme ça !
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Stack>
 
         {/* Tests Disponibles */}
-        <Grid item xs={12}>
+        <Box>
           <Typography
             variant="h5"
-            fontWeight="bold"
+            fontWeight={850}
             gutterBottom
-            sx={{ mt: 2 }}
+            sx={{ mb: 2.5 }}
           >
-            Commencer un Test Blanc
+            Séries disponibles
           </Typography>
-          <Grid container spacing={3}>
-            {availableTests.map((test) => (
-              <Grid item xs={12} sm={6} md={4} key={test.id}>
+          <Grid container spacing={2}>
+            {availableTests.filter(test => test.totalQuestionsActual > 0).length === 0 ? (
+              <Grid item xs={12}>
+                <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 4, border: '1px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+                  <Typography variant="body1" color="text.secondary" fontWeight={600}>
+                    Aucune série d'entraînement n'est disponible pour le moment.
+                  </Typography>
+                </Paper>
+              </Grid>
+            ) : (
+              availableTests.filter(test => test.totalQuestionsActual > 0).map((test) => (
+                <Grid item xs={12} sm={6} key={test.id}>
                 <Card
+                  elevation={0}
                   sx={{
                     borderRadius: 4,
-                    transition: "0.3s",
-                    border: "1px solid #e2e8f0",
-                    boxShadow: "none",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.01)",
+                    transition: "0.2s",
                     "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: "0 12px 20px rgba(0,0,0,0.05)",
+                      borderColor: "primary.main",
+                      boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+                      transform: "translateY(-2px)"
                     },
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mb: 2,
-                      }}
-                    >
-                      <Typography variant="h6" fontWeight="bold">
-                        {test.titre}
-                      </Typography>
+                  <CardContent sx={{ p: 2.5 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                      <Box>
+                        <Typography variant="h6" fontWeight={800} gutterBottom>
+                          {test.titre}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                          Thème : {getThemeLabel(test.themeName)}
+                        </Typography>
+                      </Box>
                       <Chip
-                        label={`${test.nombreQuestions} Questions`}
+                        label={`${test.nombreQuestions} Qs`}
                         size="small"
                         color="primary"
-                        sx={{ fontWeight: "bold" }}
+                        sx={{ fontWeight: 800, borderRadius: 2 }}
                       />
-                    </Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Thème : {getThemeLabel(test.themeName)} | Durée : {test.dureeMinutes} min
-                    </Typography>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<PlayArrow />}
-                      onClick={() =>
-                        navigate(`/dashboard/candidat/test/${test.id}`)
-                      }
-                      sx={{
-                        mt: 3,
-                        borderRadius: 3,
-                        py: 1.5,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Démarrer
-                    </Button>
+                    </Stack>
+                    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" sx={{ mt: 3 }}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Objectif de réussite : {test.seuilReussite}%
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<PlayArrow />}
+                        onClick={() => navigate(`/dashboard/candidat/test/${test.id}`)}
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 750,
+                          px: 2.5
+                        }}
+                      >
+                        Commencer
+                      </Button>
+                    </Stack>
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+            )))}
           </Grid>
-        </Grid>
+        </Box>
 
         {/* Historique des Tests */}
-        <Grid item xs={12}>
+        <Box>
           <Typography
             variant="h5"
-            fontWeight="bold"
+            fontWeight={850}
             gutterBottom
-            sx={{ mt: 4, display: "flex", alignItems: "center", gap: 1 }}
+            sx={{ mb: 2.5, display: "flex", alignItems: "center", gap: 1 }}
           >
-            <History color="primary" /> Historique des tests passés
+            <History color="primary" /> Historique de vos séries
           </Typography>
           <TableContainer
             component={Paper}
+            elevation={0}
             sx={{
               borderRadius: 4,
               border: "1px solid",
               borderColor: "divider",
-              boxShadow: "none",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
               overflow: "hidden"
             }}
           >
-            <Table>
-              <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+            <Table sx={{ minWidth: 500 }}>
+              <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.04) }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 800 }}>Test</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Série / Thème</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Score</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Meilleur score</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Statut</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
                   <TableCell sx={{ fontWeight: 800 }} align="right">Action</TableCell>
@@ -380,28 +402,22 @@ const TestsCandidat = () => {
                   <TableRow 
                     key={row.id} 
                     hover
-                    sx={{ 
-                      bgcolor: index % 2 === 0 ? 'transparent' : alpha(theme.palette.primary.main, 0.02)
-                    }}
                   >
-                    <TableCell>
+                    <TableCell sx={{ py: 2 }}>
                       <Stack spacing={0.5}>
-                        <Typography fontWeight="700">{row.titre}</Typography>
-                        <Chip 
-                          label={getThemeLabel(row.themeName)} 
-                          size="small" 
-                          variant="outlined"
-                          sx={{ width: 'fit-content', fontSize: '0.7rem' }}
-                        />
+                        <Typography fontWeight="800" variant="body2">{row.titre || row.testBlancNom}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          {getThemeLabel(row.themeName)}
+                        </Typography>
                       </Stack>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ minWidth: 100 }}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                          <Typography fontWeight="800" color={row.pourcentage >= 80 ? "success.main" : "warning.main"}>
-                            {row.pourcentage}%
+                          <Typography fontWeight="900" color={row.pourcentage >= 80 ? "success.main" : "warning.main"} variant="body2">
+                            {row.pourcentage ? row.pourcentage.toFixed(2).replace('.', ',') : "0,00"}%
                           </Typography>
-                          <Typography variant="caption" color="textSecondary">
+                          <Typography variant="caption" color="textSecondary" fontWeight={600}>
                             ({row.score}/{row.totalQuestions})
                           </Typography>
                         </Box>
@@ -414,23 +430,17 @@ const TestsCandidat = () => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography fontWeight="700" color="info.main">
-                        {row.meilleurScore || row.pourcentage}%
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
                       <Chip
                         icon={row.estReussi ? <CheckCircle /> : <Error />}
-                        label={row.estReussi ? "Réussi" : "À améliorer"}
-                        color={row.estReussi ? "success" : "error"}
-                        variant="filled"
+                        label={row.estReussi ? "Réussi" : "À réviser"}
+                        color={row.estReussi ? "success" : "warning"}
                         size="small"
-                        sx={{ fontWeight: 600, borderRadius: 2 }}
+                        sx={{ fontWeight: 700, borderRadius: 2 }}
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(row.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        {row.dateTest ? new Date(row.dateTest).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : "N/A"}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -439,7 +449,7 @@ const TestsCandidat = () => {
                         variant="outlined"
                         startIcon={<PlayArrow />}
                         onClick={() => navigate(`/dashboard/candidat/test/${row.id}`)}
-                        sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+                        sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700 }}
                       >
                         Refaire
                       </Button>
@@ -448,10 +458,10 @@ const TestsCandidat = () => {
                 ))}
                 {history.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                      <Assessment sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.3, mb: 1 }} />
-                      <Typography color="textSecondary">
-                        Aucun test passé pour le moment. Commencez votre premier test blanc !
+                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                      <Assessment sx={{ fontSize: 40, color: 'text.secondary', opacity: 0.3, mb: 1 }} />
+                      <Typography color="textSecondary" fontWeight={600}>
+                        Aucun test passé pour le moment.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -459,8 +469,8 @@ const TestsCandidat = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </Grid>
-      </Grid>
+        </Box>
+      </Stack>
     </Box>
   );
 };

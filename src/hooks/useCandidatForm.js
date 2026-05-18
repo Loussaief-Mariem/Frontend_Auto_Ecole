@@ -4,11 +4,7 @@ import { registerCandidat } from "../api/candidatService";
 import { validateCandidat } from "../validation/addCandidatValidation";
 import { useAuth } from "../context/AuthContext";
 import { format } from "date-fns";
-const DOCUMENT_TYPE = {
-  photoIdentite: 0,
-  copieCIN: 1,
-  certificatMedical: 2,
-};
+
 
 const getBackendErrorMessage = (err) => {
   const backendData = err?.response?.data;
@@ -29,7 +25,7 @@ const getBackendErrorMessage = (err) => {
   return "Erreur lors de la création du candidat.";
 };
 
-const useCandidatForm = ({ setErrMessage } = {}) => {
+const useCandidatForm = ({ setErrMessage, onSuccess } = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   console.log("User from AuthContext in useCandidatForm:", user);
@@ -51,17 +47,9 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
       role: 3,
       autoEcoleId: user.user?.autoEcoleId || user?.autoEcoleId || null,
     },
-    dossier: {
-      candidatId: 0,
-      documents: [],
-    },
     typePermisCode: "B",
     typeFormation: "", // 0 = Theorique, 1 = Pratique, 2 = Complet
-  });
-  const [documentsState, setDocumentsState] = useState({
-    photoIdentite: false,
-    copieCIN: false,
-    certificatMedical: false,
+    dateObtentionCode: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -106,28 +94,6 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
     }));
   };
 
-  const setDocumentChecked = (name, checked) => {
-    setDocumentsState((prev) => {
-      const updatedState = { ...prev, [name]: checked };
-      const updatedDocuments = Object.entries(DOCUMENT_TYPE).map(
-        ([key, typeDocument]) => ({
-          typeDocument,
-          etat: updatedState[key] ? 1 : 0,
-        }),
-      );
-
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        dossier: {
-          ...(prevFormData.dossier || { candidatId: 0 }),
-          candidatId: prevFormData?.dossier?.candidatId ?? 0,
-          documents: updatedDocuments,
-        },
-      }));
-
-      return updatedState;
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -169,15 +135,6 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
         : null,
       sexe: Number.isNaN(parsedSexe) ? null : parsedSexe,
       adresse: `${formData.adresse_rue}, ${formData.adresse_ville}`,
-      dossier: {
-        candidatId: formData?.dossier?.candidatId ?? 0,
-        documents: (formData?.dossier?.documents || []).length
-          ? formData.dossier.documents
-          : Object.entries(DOCUMENT_TYPE).map(([key, typeDocument]) => ({
-              typeDocument,
-              etat: documentsState[key] ? 1 : 0,
-            })),
-      },
       compte: {
         login: formData.compte.login,
         role: formData.compte.role,
@@ -187,13 +144,20 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
       typeFormation: Number.isNaN(parsedTypeFormation)
         ? null
         : parsedTypeFormation,
+      dateObtentionCode: formData.dateObtentionCode
+        ? format(new Date(formData.dateObtentionCode), "yyyy-MM-dd'T'HH:mm:ss")
+        : null,
     };
 
     try {
       await registerCandidat(payload);
       setFieldErrors({});
       alert("Candidat créé avec succès !");
-      navigate("/dashboard/candidats");
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate("/dashboard/candidats");
+      }
     } catch (err) {
       console.error(err);
       if (typeof setErrMessage === "function") {
@@ -208,8 +172,6 @@ const useCandidatForm = ({ setErrMessage } = {}) => {
     handleChange,
     setAdresse,
     setCompte,
-    documentsState,
-    setDocumentChecked,
     handleSubmit,
     loading,
     fieldErrors,

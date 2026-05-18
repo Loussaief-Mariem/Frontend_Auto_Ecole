@@ -25,6 +25,8 @@ import {
   CardContent,
   Grid,
   Tooltip,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -36,18 +38,22 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext"; // Ajout de l'import
 import useCandidatsList from "../../../hooks/useCandidatsList";
 import PaginationComponent from "../../../components/common/pagination/PaginationComponent";
+import ReinscrireCandidatModal from "../../../components/common/Candidat/ReinscrireCandidatModal";
+import AddCandidatModal from "../../../components/common/Candidat/AddCandidatModal";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 
-// Mapping des enums
-const ETAT_CANDIDAT = {
+// Mapping des enums pour le contrat
+const ETAT_CONTRAT = {
   0: { label: "Actif", color: "success" },
-  1: { label: "Archivé", color: "default" },
+  1: { label: "Terminé", color: "info" },
+  2: { label: "Interrompu", color: "error" },
+  4: { label: "Archivé", color: "default" },
 };
 
 const ETAT_COMPTE = {
   0: { label: "Actif", color: "success" },
   1: { label: "Inactif", color: "error" },
-  2: { label: "Bloqué", color: "warning" },
-  3: { label: "Archivé", color: "default" },
 };
 
 const CandidatsListPage = () => {
@@ -55,11 +61,16 @@ const CandidatsListPage = () => {
   const { user } = useAuth(); // Récupération de l'utilisateur connecté
   const [searchTerm, setSearchTerm] = useState("");
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("CompteActif");
+  const [statusFilter, setStatusFilter] = useState("ContratActif");
+  const [reinscrireModalOpen, setReinscrireModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const autoEcoleId = user?.autoEcoleId || 1; // Utilisation de l'autoEcoleId du contexte
+  const [compteTab, setCompteTab] = useState(0); // 0 = Actif, 1 = Inactif
+
+  const autoEcoleId = user?.autoEcoleId || user?.user?.autoEcoleId || 1; // Utilisation de l'autoEcoleId du contexte
   // ID du moniteur (à récupérer depuis le contexte ou les props)
-  const moniteurId = user?.moniteurId || 1; // À remplacer par l'ID du moniteur connecté
+  const moniteurId = user?.moniteurId || user?.user?.moniteurId || 1; // À remplacer par l'ID du moniteur connecté
 
   const {
     candidats,
@@ -73,16 +84,24 @@ const CandidatsListPage = () => {
     handleRefresh,
   } = useCandidatsList(autoEcoleId);
 
-  const getStatusChip = (etat) => {
-    const config = ETAT_CANDIDAT[etat] || {
-      label: "Inconnu",
+  const getEtatContratChip = (etat) => {
+    const config = ETAT_CONTRAT[etat] || {
+      label: "Aucun",
       color: "default",
     };
     return <Chip size="small" color={config.color} label={config.label} />;
   };
 
+  const getSoldeChip = (estSolde) => {
+    if (estSolde === true) return <Chip size="small" color="success" label="Soldé" />;
+    if (estSolde === false) return <Chip size="small" color="warning" label="Non Soldé" />;
+    return null;
+  };
+
   // Filtrage côté client
   const filteredCandidats = candidats.filter((candidat) => {
+    const matchesCompte = candidat.compte?.etat === compteTab;
+    
     const matchesSearch =
       candidat.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidat.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,19 +109,23 @@ const CandidatsListPage = () => {
 
     let matchesStatus = true;
     if (statusFilter !== "all") {
-      if (statusFilter === "Actif") matchesStatus = candidat.etat === 0;
-      else if (statusFilter === "Archivé") matchesStatus = candidat.etat === 1;
-      else if (statusFilter === "CompteActif")
-        matchesStatus = candidat.compte?.etat === 0;
-      else if (statusFilter === "CompteInactif")
-        matchesStatus = candidat.compte?.etat === 1;
+      if (statusFilter === "ContratActif") matchesStatus = candidat.etatContrat === 0;
+      else if (statusFilter === "ContratTermine") matchesStatus = candidat.etatContrat === 1;
+      else if (statusFilter === "ContratInterrompu") matchesStatus = candidat.etatContrat === 2;
+      else if (statusFilter === "Solde") matchesStatus = candidat.estSolde === true;
+      else if (statusFilter === "NonSolde") matchesStatus = candidat.estSolde === false;
     }
 
-    return matchesSearch && matchesStatus;
+    return matchesCompte && matchesSearch && matchesStatus;
   });
 
   // Redirection selon le rôle
   const handleViewProfile = (id) => {
+    const cand = candidats.find(c => c.id === id);
+    if (cand && cand.compte?.etat === 1) {
+      alert("Ce profil est inaccessible car le compte du candidat est inactif.");
+      return;
+    }
     const role = user?.role;
 
     if (role === "Secretaire") {
@@ -113,10 +136,6 @@ const CandidatsListPage = () => {
       // Fallback par défaut
       navigate(`/dashboard/secretaire/candidats/${id}`);
     }
-  };
-
-  const handleExport = () => {
-    console.log("Export des candidats");
   };
 
   if (loading && candidats.length === 0) {
@@ -152,17 +171,85 @@ const CandidatsListPage = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* En-tête */}
-      <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Typography variant="h5" fontWeight="bold" gutterBottom>
-          Gestion des Candidats
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Gérez les informations et le suivi des candidats
-        </Typography>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3, 
+          borderRadius: 2, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+          gap: 2
+        }}
+      >
+        <Box>
+          <Typography variant="h5" fontWeight="bold" gutterBottom>
+            Gestion des Candidats
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Gérez les informations et le suivi des candidats
+          </Typography>
+
+          {successMessage && (
+            <Alert severity="success" sx={{ mt: 2 }} onClose={() => setSuccessMessage("")}>
+              {successMessage}
+            </Alert>
+          )}
+        </Box>
+
+        {user?.role === "Secretaire" && (
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<PersonAddIcon />}
+              onClick={() => setAddModalOpen(true)}
+            >
+              Ajouter un candidat
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<AutorenewIcon />}
+              onClick={() => setReinscrireModalOpen(true)}
+            >
+              Réinscrire
+            </Button>
+          </Stack>
+        )}
       </Paper>
+
+      <AddCandidatModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={() => {
+          setSuccessMessage("Candidat ajouté avec succès.");
+          handleRefresh();
+        }}
+      />
+
+      <ReinscrireCandidatModal
+        open={reinscrireModalOpen}
+        onClose={() => setReinscrireModalOpen(false)}
+        autoEcoleId={autoEcoleId}
+        onSuccess={(msg) => {
+          setSuccessMessage(msg);
+          handleRefresh();
+        }}
+      />
 
       {/* Filtres et recherche */}
       <Card sx={{ mb: 3, borderRadius: 2 }}>
+        <Tabs
+          value={compteTab}
+          onChange={(e, newValue) => setCompteTab(newValue)}
+          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+        >
+          <Tab label="Comptes Actifs" />
+          <Tab label="Comptes Inactifs" />
+        </Tabs>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
@@ -192,13 +279,15 @@ const CandidatsListPage = () => {
                 Statut:{" "}
                 {statusFilter === "all"
                   ? "Tous"
-                  : statusFilter === "Actif"
-                    ? "Candidats Actifs"
-                    : statusFilter === "Archivé"
-                      ? "Candidats Archivés"
-                      : statusFilter === "CompteActif"
-                        ? "Compte Actif"
-                        : "Compte inactif"}
+                  : statusFilter === "ContratActif"
+                    ? "Contrat Actif"
+                    : statusFilter === "ContratTermine"
+                      ? "Contrat Terminé"
+                      : statusFilter === "ContratInterrompu"
+                        ? "Contrat Interrompu"
+                        : statusFilter === "Solde"
+                          ? "Soldé"
+                          : "Non Soldé"}
               </Button>
               <Menu
                 anchorEl={filterAnchorEl}
@@ -215,47 +304,45 @@ const CandidatsListPage = () => {
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    setStatusFilter("CompteActif");
+                    setStatusFilter("ContratActif");
                     setFilterAnchorEl(null);
                   }}
                 >
-                  Compte Actif
+                  Contrat Actif
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    setStatusFilter("Actif");
+                    setStatusFilter("ContratTermine");
                     setFilterAnchorEl(null);
                   }}
                 >
-                  Candidats Actifs
+                  Contrat Terminé
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    setStatusFilter("Archivé");
+                    setStatusFilter("ContratInterrompu");
                     setFilterAnchorEl(null);
                   }}
                 >
-                  Candidats Archivés
+                  Contrat Interrompu
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
-                    setStatusFilter("CompteInactif");
+                    setStatusFilter("Solde");
                     setFilterAnchorEl(null);
                   }}
                 >
-                  Compte Inactif
+                  Soldé
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setStatusFilter("NonSolde");
+                    setFilterAnchorEl(null);
+                  }}
+                >
+                  Non Soldé
                 </MenuItem>
               </Menu>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<DownloadIcon />}
-                onClick={handleExport}
-              >
-                Exporter
-              </Button>
             </Grid>
           </Grid>
         </CardContent>
@@ -272,13 +359,15 @@ const CandidatsListPage = () => {
                 <TableCell>Contact</TableCell>
                 <TableCell>Date d'inscription</TableCell>
                 <TableCell>Statut compte</TableCell>
+                <TableCell>Statut contrat</TableCell>
+                <TableCell>Paiement</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredCandidats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={8} align="center">
                     <Typography
                       variant="body2"
                       color="text.secondary"
@@ -311,7 +400,7 @@ const CandidatsListPage = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {candidat.compte?.telephone || "N/A"}
+                        {candidat.telephone || "N/A"}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {candidat.compte?.login || "N/A"}
@@ -335,16 +424,24 @@ const CandidatsListPage = () => {
                         }
                       />
                     </TableCell>
+                    <TableCell>
+                      {getEtatContratChip(candidat.etatContrat)}
+                    </TableCell>
+                    <TableCell>
+                      {getSoldeChip(candidat.estSolde)}
+                    </TableCell>
                     <TableCell align="center">
-                      <Tooltip title="Voir profil">
-                        <IconButton
-                          onClick={() => handleViewProfile(candidat.id)}
-                          color="primary"
-                        >
-                          <ViewIcon />
-                        </IconButton>
+                      <Tooltip title={candidat.compte?.etat === 1 ? "Compte Inactif - Profil inaccessible" : "Voir profil"}>
+                        <span>
+                          <IconButton
+                            onClick={() => handleViewProfile(candidat.id)}
+                            color="primary"
+                            disabled={candidat.compte?.etat === 1}
+                          >
+                            <ViewIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
-
                     </TableCell>
                   </TableRow>
                 ))
