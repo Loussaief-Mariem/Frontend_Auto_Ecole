@@ -76,25 +76,39 @@ const ProfessionalCalendar = ({ seances, onSelectEvent }) => {
 
   // Style des événements
   const eventStyleGetter = (event) => {
-    let backgroundColor = "#1976d2"; // Bleu par défaut (Code)
+    let backgroundColor = "#eff6ff"; 
+    let color = "#1d4ed8";
+    let borderLeft = "4px solid #3b82f6";
+    let border = "1px solid #dbeafe";
     
     if (event.isCancelled) {
-      backgroundColor = "#d32f2f"; // Rouge pour annulé
+      backgroundColor = "#fff1f2";
+      color = "#be123c";
+      borderLeft = "4px solid #f43f5e";
+      border = "1px solid #ffe4e6";
     } else if (event.globalType === "conduite") {
-      backgroundColor = "#9c27b0"; // Violet pour conduite
+      backgroundColor = "#faf5ff";
+      color = "#7e22ce";
+      borderLeft = "4px solid #a855f7";
+      border = "1px solid #f3e8ff";
     }
 
     return {
       style: {
         backgroundColor,
-        borderRadius: '6px',
-        opacity: 0.9,
-        color: 'white',
-        border: 'none',
+        color,
+        borderLeft,
+        borderTop: border,
+        borderBottom: border,
+        borderRight: border,
+        borderRadius: '8px',
+        opacity: 0.95,
         display: 'block',
-        fontSize: '0.85rem',
-        padding: '2px 5px',
-        boxShadow: '0px 2px 4px rgba(0,0,0,0.2)'
+        fontSize: '0.8rem',
+        fontWeight: '600',
+        padding: '6px 10px',
+        boxShadow: '0px 2px 4px rgba(0,0,0,0.03)',
+        height: '100%'
       }
     };
   };
@@ -124,26 +138,84 @@ const ProfessionalCalendar = ({ seances, onSelectEvent }) => {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        height: '75vh',
-        minHeight: '600px',
+        height: '78vh',
+        minHeight: '650px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
         "& .rbc-calendar": {
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Outfit', 'Inter', sans-serif",
         },
         "& .rbc-toolbar": {
-          mb: 2,
+          mb: 3,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+        },
+        "& .rbc-toolbar-label": {
+          fontWeight: 800,
+          fontSize: '1.25rem',
+          color: 'text.primary',
         },
         "& .rbc-toolbar button": {
-          borderRadius: '8px',
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: 'divider',
+          padding: '6px 16px',
+          fontWeight: '600',
+          textTransform: 'none',
+          color: 'text.secondary',
+          transition: 'all 0.2s ease',
+          cursor: 'pointer',
+          '&:hover': {
+            backgroundColor: '#f1f5f9',
+            color: 'text.primary',
+          }
         },
         "& .rbc-toolbar button.rbc-active": {
-          backgroundColor: "#e2e8f0",
-          boxShadow: 'none'
+          backgroundColor: 'primary.main',
+          color: 'white',
+          borderColor: 'primary.main',
+          boxShadow: '0 4px 6px -1px rgba(25, 118, 210, 0.2)',
+          '&:hover': {
+            backgroundColor: 'primary.dark',
+            color: 'white',
+          }
+        },
+        "& .rbc-header": {
+          padding: '12px',
+          fontWeight: '700',
+          color: 'text.secondary',
+          borderBottomWidth: '2px',
+        },
+        "& .rbc-header.rbc-today": {
+          color: 'primary.main',
+          fontWeight: '800',
+          backgroundColor: '#eff6ff',
+        },
+        "& .rbc-time-content": {
+          borderTop: '2px solid',
+          borderColor: 'divider',
+        },
+        "& .rbc-time-gutter .rbc-timeslot-group": {
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          pr: 1.5,
+        },
+        "& .rbc-timeslot-group": {
+          minHeight: '60px',
+        },
+        "& .rbc-day-slot .rbc-time-slot": {
+          borderTop: '1px dashed #f1f5f9',
         },
         "& .rbc-event": {
-          transition: 'transform 0.1s',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          padding: 0,
         },
         "& .rbc-event:hover": {
-          transform: 'scale(1.02)'
+          transform: 'translateY(-2px)',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          zIndex: 10,
+        },
+        "& .rbc-today": {
+          backgroundColor: '#f8fafc',
         }
       }}
     >
@@ -152,9 +224,9 @@ const ProfessionalCalendar = ({ seances, onSelectEvent }) => {
           Planning des Séances
         </Typography>
         <Box display="flex" gap={1}>
-          <Chip label="Code" size="small" sx={{ bgcolor: '#1976d2', color: 'white' }} />
-          <Chip label="Conduite" size="small" sx={{ bgcolor: '#9c27b0', color: 'white' }} />
-          <Chip label="Annulée" size="small" sx={{ bgcolor: '#d32f2f', color: 'white' }} />
+          <Chip label="Code" size="small" sx={{ bgcolor: '#eff6ff', color: '#1d4ed8', borderLeft: '3px solid #3b82f6', fontWeight: 'bold' }} />
+          <Chip label="Conduite" size="small" sx={{ bgcolor: '#faf5ff', color: '#7e22ce', borderLeft: '3px solid #a855f7', fontWeight: 'bold' }} />
+          <Chip label="Annulée" size="small" sx={{ bgcolor: '#fff1f2', color: '#be123c', borderLeft: '3px solid #f43f5e', fontWeight: 'bold' }} />
         </Box>
       </Box>
 

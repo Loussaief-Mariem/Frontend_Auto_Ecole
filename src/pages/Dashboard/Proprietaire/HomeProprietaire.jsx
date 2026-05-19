@@ -28,6 +28,7 @@ import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 
 import DashboardUserMeta from "../../../components/common/dashboard/DashboardUserMeta";
 import { useAuth } from "../../../context/AuthContext";
@@ -228,12 +229,31 @@ const SeanceRow = ({ session }) => {
 // ── Page principale ───────────────────────────────────────────────────────────
 const HomeProprietaire = () => {
   const { user } = useAuth();
-  const { stats, loading, error, refetch } = useDashboardStats(user?.autoEcoleId);
+  const loading = false;
+  const error = null;
 
   const todayLabel = format(new Date(), "EEEE dd MMMM yyyy", { locale: fr });
-  const seancesToday   = stats?.seancesProprietaireDetail ?? [];
-  const nbPlanifiees   = seancesToday.filter((s) => !s.estAnnulee && !s.estEffectuee).length;
-  const nbTerminees    = seancesToday.filter((s) => s.estEffectuee && !s.estAnnulee).length;
+
+  // Beautiful static demo data
+  const stats = {
+    comptesActifs: 6,
+    candidatsActifs: 142,
+    seancesConduiteAujourdhui: 6,
+    seancesCodeAujourdhui: 8,
+    mesCandidatsAffectes: 18,
+    revenuMensuel: 4850
+  };
+
+  const seancesToday = [
+    { id: 1, heureDebut: "08:30", heureFin: "09:30", candidatNom: "Ben Ali", candidatPrenom: "Amine", typeConduite: "Ville", estEffectuee: true, estAnnulee: false },
+    { id: 2, heureDebut: "10:00", heureFin: "11:30", candidatNom: "Tounsi", candidatPrenom: "Marwen", typeConduite: "Route", estEffectuee: true, estAnnulee: false },
+    { id: 3, heureDebut: "14:00", heureFin: "15:30", candidatNom: "El Ouaer", candidatPrenom: "Rim", typeConduite: "Autoroute", estEffectuee: false, estAnnulee: false },
+    { id: 4, heureDebut: "16:00", heureFin: "17:00", candidatNom: "Trabelsi", candidatPrenom: "Yassine", typeConduite: "Ville", estEffectuee: false, estAnnulee: false },
+    { id: 5, heureDebut: "17:30", heureFin: "18:30", candidatNom: "Mansour", candidatPrenom: "Faten", typeConduite: "Ville", estEffectuee: false, estAnnulee: true }
+  ];
+
+  const nbPlanifiees = seancesToday.filter((s) => !s.estAnnulee && !s.estEffectuee).length;
+  const nbTerminees = seancesToday.filter((s) => s.estEffectuee && !s.estAnnulee).length;
 
   return (
     <Grid container spacing={3}>
@@ -260,23 +280,7 @@ const HomeProprietaire = () => {
             <DashboardUserMeta />
           </Box>
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title="Rafraîchir">
-              <IconButton onClick={refetch} size="small" disabled={loading}>
-                <RefreshRoundedIcon
-                  fontSize="small"
-                  sx={{
-                    color: BLUE[600],
-                    animation: loading ? "spin 1s linear infinite" : "none",
-                    "@keyframes spin": {
-                      from: { transform: "rotate(0deg)" },
-                      to: { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+
         </Stack>
       </Grid>
 
@@ -288,42 +292,52 @@ const HomeProprietaire = () => {
       )}
 
       {/* ── KPI — ligne 1 ────────────────────────────────────────────── */}
-      <Grid item xs={12} sm={6} lg={3}>
+      <Grid item xs={12} sm={6} lg={2.4}>
         <StatCard
           loading={loading}
           dark
           title="Comptes actifs"
-          value={stats?.comptesActifs ?? "–"}
+          value={stats.comptesActifs}
           subtitle="Moniteurs + secrétaires"
           icon={<Groups2OutlinedIcon />}
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} lg={3}>
+      <Grid item xs={12} sm={6} lg={2.4}>
         <StatCard
           loading={loading}
           title="Candidats actifs"
-          value={stats?.candidatsActifs ?? "–"}
+          value={stats.candidatsActifs}
           subtitle="Contrats en cours"
           icon={<PeopleAltOutlinedIcon />}
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} lg={3}>
+      <Grid item xs={12} sm={6} lg={2.4}>
+        <StatCard
+          loading={loading}
+          title="Mes candidats affectés"
+          value={stats.mesCandidatsAffectes}
+          subtitle="Affectation personnelle"
+          icon={<SchoolOutlinedIcon />}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6} lg={2.4}>
         <StatCard
           loading={loading}
           title="Séances conduite"
-          value={stats?.seancesConduiteAujourdhui ?? "–"}
+          value={stats.seancesConduiteAujourdhui}
           subtitle="Planifiées aujourd'hui"
           icon={<DirectionsCarOutlinedIcon />}
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} lg={3}>
+      <Grid item xs={12} sm={6} lg={2.4}>
         <StatCard
           loading={loading}
           title="Séances code"
-          value={stats?.seancesCodeAujourdhui ?? "–"}
+          value={stats.seancesCodeAujourdhui}
           subtitle="Planifiées aujourd'hui"
           icon={<MenuBookOutlinedIcon />}
         />

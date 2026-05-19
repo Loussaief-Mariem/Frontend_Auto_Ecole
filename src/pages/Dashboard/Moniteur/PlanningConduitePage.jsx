@@ -17,8 +17,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import PlanningGlobalPage from "../PlanningGlobalPage";
 
 import { useAuth } from "../../../context/AuthContext";
 import { useSeancesConduite } from "../../../hooks/useSeancesConduite";
@@ -29,7 +33,8 @@ import SeanceFilters from "../../../components/common/seances/SeanceFilters";
 
 const PlanningConduitePage = () => {
   const { user } = useAuth();
-  const moniteurId = user?.user?.id || user?.user?.idProprietaire || user?.id;
+  const isMoniteur = user?.role === "Moniteur";
+  const moniteurId = isMoniteur ? (user?.user?.id || user?.id) : null;
   const autoEcoleId = user?.user?.idAutoEcole || user?.user?.autoEcoleId || user?.autoEcoleId;
 
   const {
@@ -40,6 +45,8 @@ const PlanningConduitePage = () => {
     setSearchTerm,
     dateFilter,
     setDateFilter,
+    viewScope,
+    setViewScope,
     tabValue,
     setTabValue,
     counts,
@@ -49,7 +56,7 @@ const PlanningConduitePage = () => {
     handleDesannuler,
     marquerPresenceSeance,
     ajouterRemarqueSeance
-  } = useSeancesConduite(moniteurId);
+  } = useSeancesConduite(user);
 
   const {
     allContrats: contratsPratique,
@@ -62,6 +69,7 @@ const PlanningConduitePage = () => {
   });
 
   const [openPlanifier, setOpenPlanifier] = useState(false);
+  const [openGlobalCalendar, setOpenGlobalCalendar] = useState(false);
   const [selectedSeanceToEdit, setSelectedSeanceToEdit] = useState(null);
   
   // Confirmation Dialog State
@@ -151,7 +159,8 @@ const PlanningConduitePage = () => {
     contratId: c.id,
     prenom: c.candidatPrenom || c.candidat?.prenom,
     nom: c.candidatNom || c.candidat?.nom,
-    numeroCIN: c.cin || c.candidatCIN || c.candidat?.numeroCIN
+    numeroCIN: c.cin || c.candidatCIN || c.candidat?.numeroCIN,
+    moniteurId: c.moniteurId || c.moniteur?.id
   })).filter(c => c.id);
 
   return (
@@ -167,7 +176,7 @@ const PlanningConduitePage = () => {
           </Typography>
         </Box>
         
-        <Box>
+        <Box display="flex" gap={2}>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -231,10 +240,11 @@ const PlanningConduitePage = () => {
 
       {/* Filters Section */}
       <SeanceFilters 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm}
         dateFilter={dateFilter}
         setDateFilter={setDateFilter}
+        viewScope={viewScope}
+        setViewScope={setViewScope}
+        showScopeFilter={user?.role === "Moniteur" || user?.role === "Secretaire"}
       />
 
       {error && (
@@ -264,11 +274,30 @@ const PlanningConduitePage = () => {
           setSelectedSeanceToEdit(null);
         }}
         onSubmit={planifier}
-        moniteurId={moniteurId}
+        moniteurId={moniteurId || (user?.user?.id || user?.id)}
         candidats={candidats}
         initialData={selectedSeanceToEdit}
         loading={loading || loadingCandidats}
       />
+
+      {/* Global Calendar Dialog */}
+      <Dialog 
+        open={openGlobalCalendar} 
+        onClose={() => setOpenGlobalCalendar(false)} 
+        maxWidth="xl" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
+          <Typography variant="h5" fontWeight="800">Calendrier Global</Typography>
+          <IconButton onClick={() => setOpenGlobalCalendar(false)}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <PlanningGlobalPage />
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <Dialog

@@ -147,7 +147,7 @@ const FinancesCandidat = () => {
     moniteurId: 5,
     moniteur: { nom: "Karim", prenom: "Ben Ali" },
     etatContrat: 0,
-    estSolde: false,
+    etatPaiement: 1,
     heuresCodeTotal: 20,
     heuresCodeEffectuees: 1,
     heuresConduiteTotal: 20,
@@ -180,7 +180,7 @@ const FinancesCandidat = () => {
       moniteurId: 3,
       moniteur: { nom: "Sami", prenom: "Mansour" },
       etatContrat: 1,
-      estSolde: true,
+      etatPaiement: 2,
       heuresCodeTotal: 20,
       heuresCodeEffectuees: 20,
       heuresConduiteTotal: 0,
@@ -209,7 +209,7 @@ const FinancesCandidat = () => {
       moniteurId: 8,
       moniteur: { nom: "Nadia", prenom: "Ben Salem" },
       etatContrat: 2,
-      estSolde: false,
+      etatPaiement: 1,
       heuresCodeTotal: 0,
       heuresCodeEffectuees: 0,
       heuresConduiteTotal: 20,
@@ -274,7 +274,7 @@ const FinancesCandidat = () => {
         <Stack spacing={3}>
           {contratActif ? (
             <>
-              {contratActif.estSolde && (
+              {contratActif.etatPaiement === 2 && (
                 <Alert 
                   icon={<CheckCircleOutlineIcon fontSize="inherit" />} 
                   severity="success"

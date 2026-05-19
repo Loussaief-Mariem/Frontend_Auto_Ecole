@@ -44,9 +44,11 @@ import {
   People as PeopleIcon,
   DriveEta as CarIcon,
   AdminPanelSettings as AdminIcon,
+  PersonAdd as PersonAddIcon,
 } from "@mui/icons-material"; //
 import userManagementService from "../../../api/userManagementService";
 import PaginationComponent from "../../../components/common/pagination/PaginationComponent";
+import AddUser from "./AddUser";
 
 // Composant pour les cartes de statistiques
 const StatCard = ({ title, count, icon, color, loading }) => (
@@ -92,19 +94,12 @@ const GestionUtilisateurs = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [filters, setFilters] = useState({
     statut: "TOUS",
-    archive: "TOUS",
     recherche: "",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
 
   const tabs = [
-    { label: "Tous", value: "all", icon: <PeopleIcon />, color: "#1976d2" },
-    {
-      label: "Candidats",
-      value: "candidats",
-      icon: <PeopleIcon />,
-      color: "#2e7d32",
-    },
     {
       label: "Moniteurs",
       value: "moniteurs",
@@ -142,22 +137,6 @@ const GestionUtilisateurs = () => {
 
       let response;
       switch (tabValue) {
-        case "all":
-          response = await userManagementService.getAllUsersPaginated(
-            autoEcoleId,
-            page,
-            pageSize,
-            filters,
-          );
-          break;
-        case "candidats":
-          response = await userManagementService.getCandidatsPaginated(
-            autoEcoleId,
-            page,
-            pageSize,
-            filters,
-          );
-          break;
         case "moniteurs":
           response = await userManagementService.getMoniteursPaginated(
             autoEcoleId,
@@ -214,7 +193,7 @@ const GestionUtilisateurs = () => {
   };
 
   const resetFilters = () => {
-    setFilters({ statut: "TOUS", archive: "TOUS", recherche: "" });
+    setFilters({ statut: "TOUS", recherche: "" });
     setPage(1);
   };
 
@@ -360,30 +339,32 @@ const GestionUtilisateurs = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" fontWeight="bold" sx={{ mb: 3 }}>
-        Gestion des utilisateurs
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
+        <Typography variant="h4" fontWeight="bold">
+          Gestion du personnel
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          startIcon={<PersonAddIcon />}
+          onClick={() => setOpenAddDialog(true)}
+          sx={{ borderRadius: 2 }}
+        >
+          Ajouter du personnel
+        </Button>
+      </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4}>
           <StatCard
-            title="Total"
-            count={totals.total}
+            title="Total Personnel"
+            count={(totals.moniteurs || 0) + (totals.secretaires || 0)}
             icon={<PeopleIcon />}
             color="#1976d2"
             loading={loadingTotals}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Candidats"
-            count={totals.candidats}
-            icon={<PeopleIcon />}
-            color="#2e7d32"
-            loading={loadingTotals}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4}>
           <StatCard
             title="Moniteurs"
             count={totals.moniteurs}
@@ -392,7 +373,7 @@ const GestionUtilisateurs = () => {
             loading={loadingTotals}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4}>
           <StatCard
             title="Secrétaires"
             count={totals.secretaires}
@@ -490,27 +471,12 @@ const GestionUtilisateurs = () => {
                 >
                   <MenuItem value="TOUS">Tous</MenuItem>
                   <MenuItem value="ACTIF">Actifs</MenuItem>
-                  <MenuItem value="BLOQUÉ">Bloqués</MenuItem>
                   <MenuItem value="INACTIF">Inactifs</MenuItem>
-                  <MenuItem value="ARCHIVÉ">Archivés</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Archive</InputLabel>
-                <Select
-                  value={filters.archive}
-                  label="Archive"
-                  onChange={(e) =>
-                    handleFilterChange("archive", e.target.value)
-                  }
-                >
-                  <MenuItem value="TOUS">Tous</MenuItem>
-                  <MenuItem value="NON_ARCHIVÉ">Non archivés</MenuItem>
-                  <MenuItem value="ARCHIVÉ">Archivés</MenuItem>
-                </Select>
-              </FormControl>
+              {/* Optional secondary filter placeholder */}
             </Grid>
             <Grid item xs={12}>
               <Button variant="text" onClick={resetFilters} size="small">
@@ -530,24 +496,20 @@ const GestionUtilisateurs = () => {
               <TableCell>Prénom</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Téléphone</TableCell>
-              {currentTab === 0 && <TableCell>Rôle</TableCell>}
               <TableCell>Statut</TableCell>
-              {(currentTab === 2 || currentTab === 0) && (
-                <TableCell>Types permis</TableCell>
-              )}
-              <TableCell align="center">Actions</TableCell>
+              <TableCell>Types permis</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : usersData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                   <Typography color="text.secondary">
                     Aucun utilisateur trouvé
                   </Typography>
@@ -559,16 +521,7 @@ const GestionUtilisateurs = () => {
                   <TableCell>{user.nom}</TableCell>
                   <TableCell>{user.prenom}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.telephone}</TableCell>
-                  {currentTab === 0 && (
-                    <TableCell>
-                      <Chip
-                        label={formatRole(user.role)}
-                        size="small"
-                        color={getRoleColor(user.role)}
-                      />
-                    </TableCell>
-                  )}
+                  <TableCell>{user.telephone || "—"}</TableCell>
                   <TableCell>
                     <Chip
                       label={user.statut}
@@ -576,60 +529,8 @@ const GestionUtilisateurs = () => {
                       color={getStatusColor(user.statut)}
                     />
                   </TableCell>
-                  {(currentTab === 2 || currentTab === 0) && (
-                    <TableCell>
-                      {user.typesPermisCodes?.join(", ") || "-"}
-                    </TableCell>
-                  )}
-                  <TableCell align="center">
-                    {!user.archive && user.statut !== "ARCHIVÉ" ? (
-                      <>
-                        {user.statut === "ACTIF" && (
-                          <Tooltip title="Bloquer le compte">
-                            <IconButton
-                              color="error"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setOpenBlockDialog(true);
-                              }}
-                              size="small"
-                            >
-                              <BlockIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {user.statut === "BLOQUÉ" && (
-                          <Tooltip title="Débloquer le compte">
-                            <IconButton
-                              color="success"
-                              onClick={() => handleUnblockUser(user)}
-                              size="small"
-                            >
-                              <CheckCircleIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        <Tooltip title="Archiver">
-                          <IconButton
-                            color="warning"
-                            onClick={() => handleArchiveUser(user)}
-                            size="small"
-                          >
-                            <ArchiveIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    ) : (
-                      <Tooltip title="Désarchiver">
-                        <IconButton
-                          color="info"
-                          onClick={() => handleUnarchiveUser(user)}
-                          size="small"
-                        >
-                          <UnarchiveIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                  <TableCell>
+                    {user.typesPermisCodes?.join(", ") || "-"}
                   </TableCell>
                 </TableRow>
               ))
@@ -647,40 +548,23 @@ const GestionUtilisateurs = () => {
         />
       </TableContainer>
 
-      {/* Dialogue de confirmation de blocage simplifié */}
-      <Dialog
-        open={openBlockDialog}
-        onClose={() => setOpenBlockDialog(false)}
-        maxWidth="xs"
+      {/* Modal pour Ajouter du Personnel */}
+      <Dialog 
+        open={openAddDialog} 
+        onClose={() => setOpenAddDialog(false)} 
+        maxWidth="sm" 
         fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle sx={{ bgcolor: "error.main", color: "white" }}>
-          Confirmer le blocage
+        <DialogTitle sx={{ fontWeight: 'bold', pb: 1, pt: 3 }}>
+          Ajouter un membre du personnel
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Êtes-vous sûr de vouloir bloquer le compte de{" "}
-            <strong>
-              {selectedUser?.nom} {selectedUser?.prenom}
-            </strong>{" "}
-            ?
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            L'utilisateur ne pourra plus se connecter à son compte. Cette action
-            peut être inversée ultérieurement.
-          </Typography>
+        <DialogContent sx={{ px: 3 }}>
+          <AddUser onSuccess={() => { setOpenAddDialog(false); handleRefresh(); }} />
         </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
-          <Button onClick={() => setOpenBlockDialog(false)} variant="outlined">
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setOpenAddDialog(false)} color="inherit" sx={{ borderRadius: 2 }}>
             Annuler
-          </Button>
-          <Button
-            onClick={handleBlockUser}
-            variant="contained"
-            color="error"
-            startIcon={<BlockIcon />}
-          >
-            Bloquer le compte
           </Button>
         </DialogActions>
       </Dialog>

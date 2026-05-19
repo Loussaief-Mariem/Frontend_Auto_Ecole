@@ -39,28 +39,20 @@ const menusByRole = {
       path: "/dashboard/proprietaire",
     },
     {
-      text: "Gestion des Comptes",
+      text: "Gestion du personnel",
       icon: <PeopleAltOutlinedIcon />,
       path: "/dashboard/proprietaire/gestion-utilisateurs",
     },
-    {
-      text: "Ajouter personnel",
-      icon: <PersonAddOutlinedIcon />,
-      path: "/dashboard/proprietaire/adduser",
-    },
 
-    {
-      text: "Gestion des séances",
-      icon: <EventAvailableOutlinedIcon />,
-      path: "/dashboard/proprietaire/seances",
-    },
+
+
     {
       text: "Tarifs",
       icon: <PriceChangeOutlinedIcon />,
       path: "/dashboard/proprietaire/tarifs",
     },
     {
-      text: "Planning conduite",
+      text: "Gestion séance de conduite",
       icon: <CalendarMonthOutlinedIcon />,
       path: "/dashboard/moniteur/planning-conduite",
     },
@@ -89,7 +81,7 @@ const menusByRole = {
     },
 
     {
-      text: "Planifier séances",
+      text: "Gestion séance de code",
       icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/secretaire/planning",
     },
@@ -112,12 +104,12 @@ const menusByRole = {
       path: "/dashboard/moniteur",
     },
     {
-      text: "Gérer mes horaires",
+      text: "Gestion des séances",
       icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/moniteur/planning",
     },
     {
-      text: "Planning conduite (Liste)",
+      text: "Gestion séance de conduite",
       icon: <EventAvailableOutlinedIcon />,
       path: "/dashboard/moniteur/planning-conduite",
     },

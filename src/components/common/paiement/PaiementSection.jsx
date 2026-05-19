@@ -59,8 +59,14 @@ const formatDate = (dateStr) => {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("fr-TN");
 };
 
-const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
+const PaiementSection = ({ tousContrats = [], onPaiementAdded, candidatInactif }) => {
   const theme = useTheme();
+
+  // Normalize contracts to derive estSolde state from backend's etatPaiement
+  const normalizedContrats = tousContrats.map((c) => ({
+    ...c,
+    estSolde: c.etatPaiement === 2 || c.estSolde || (c.montantRestant !== undefined && c.montantRestant <= 0),
+  }));
 
   // Selected contract state
   const [selectedContrat, setSelectedContrat] = useState(null);
@@ -99,7 +105,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
           montantTotal: total,
           montantPaye: paye,
           montantRestant: reste,
-          estSolde: reste <= 0,
+          estSolde: prev.etatPaiement === 2 || reste <= 0,
         };
       });
     }
@@ -364,11 +370,14 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
 
   // Handle contract selection
   const handleSelectContrat = (contrat) => {
-    setSelectedContrat(contrat);
+    setSelectedContrat({
+      ...contrat,
+      estSolde: contrat.etatPaiement === 2 || contrat.estSolde || (contrat.montantRestant !== undefined && contrat.montantRestant <= 0),
+    });
     setForm({
       montant: "",
       description: "",
-      type: contrat.typeFormation === 0 ? 1 : 0, // Default type based on formation
+      type: contrat.typeFormation === 0 ? 1 : 0, // Default to 1 (code) if teorique, else 0 (conduite)
     });
     setErrorAlert("");
   };
@@ -462,7 +471,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
         </Box>
 
         <Grid container spacing={3}>
-          {tousContrats.map((contrat) => {
+          {normalizedContrats.map((contrat) => {
             const progress =
               contrat.montantTotal > 0
                 ? Math.min((contrat.montantPaye / contrat.montantTotal) * 100, 100)
@@ -582,7 +591,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                             boxShadow: "none",
                           }}
                         >
-                          {contrat.estSolde ? "Consulter" : "Gérer les paiements"}
+                          {contrat.estSolde || candidatInactif ? "Consulter" : "Gérer les paiements"}
                         </Button>
                       </Grid>
                     </Grid>
@@ -762,6 +771,12 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                 </Typography>
               </Box>
 
+              {candidatInactif && (
+                <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+                  Le compte du candidat est inactif. L'enregistrement de nouveaux paiements est désactivé.
+                </Alert>
+              )}
+
               {selectedContrat.estSolde && (
                 <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
                   Ce contrat est entièrement soldé. Aucun paiement supplémentaire n'est requis ou autorisé.
@@ -785,7 +800,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                   inputProps={{ min: 1, step: "any" }}
                   placeholder="Exemple: 150"
                   variant="outlined"
-                  disabled={selectedContrat.estSolde}
+                  disabled={selectedContrat.estSolde || candidatInactif}
                 />
 
                 <TextField
@@ -796,7 +811,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                   variant="outlined"
-                  disabled={selectedContrat.estSolde}
+                  disabled={selectedContrat.estSolde || candidatInactif}
                 >
                   <MenuItem value={0}>Acompte Conduite</MenuItem>
                   <MenuItem value={1}>Acompte Code</MenuItem>
@@ -811,7 +826,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                   multiline
                   rows={2}
                   variant="outlined"
-                  disabled={selectedContrat.estSolde}
+                  disabled={selectedContrat.estSolde || candidatInactif}
                 />
 
                 {form.montant && !Number.isNaN(parseFloat(form.montant)) && (
@@ -840,7 +855,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                   variant="contained"
                   color="primary"
                   onClick={handlePayerClick}
-                  disabled={loading || selectedContrat.estSolde}
+                  disabled={loading || selectedContrat.estSolde || candidatInactif}
                   fullWidth
                   size="large"
                   sx={{
@@ -850,7 +865,7 @@ const PaiementSection = ({ tousContrats = [], onPaiementAdded }) => {
                     py: 1.5,
                   }}
                 >
-                  {loading ? "Enregistrement..." : selectedContrat.estSolde ? "Contrat totalement soldé" : "Confirmer le paiement"}
+                  {loading ? "Enregistrement..." : candidatInactif ? "Compte Inactif" : selectedContrat.estSolde ? "Contrat totalement soldé" : "Confirmer le paiement"}
                 </Button>
               </Stack>
             </CardContent>

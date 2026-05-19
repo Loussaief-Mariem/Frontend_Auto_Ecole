@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   getPlanningMoniteur,
+  getAllSeancesConduite,
   planifierSeanceConduite,
   planifierSeancesConduiteBatch,
   annulerSeanceConduite,
@@ -21,12 +22,13 @@ import {
   endOfMonth,
 } from "date-fns";
 
-export const useSeancesConduite = (moniteurId) => {
+export const useSeancesConduite = (user) => {
   const [seances, setSeances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
+  const [viewScope, setViewScope] = useState("all"); // all, mine
   const [tabValue, setTabValue] = useState(0); // 0: Upcoming, 1: Past, 2: Cancelled
 
   const loadSeances = useCallback(
@@ -34,11 +36,21 @@ export const useSeancesConduite = (moniteurId) => {
       if (!isRefresh) setLoading(true);
       setError(null);
       try {
-        if (!moniteurId) {
+        const role = user?.role || user?.user?.role;
+        const userId = user?.id || user?.user?.id;
+        const autoEcoleId = user?.user?.idAutoEcole || user?.user?.autoEcoleId || user?.autoEcoleId;
+
+        if (!role || (!userId && !autoEcoleId)) {
           setSeances([]);
           return;
         }
-        const response = await getPlanningMoniteur(moniteurId);
+
+        let response;
+        if (role === "Proprietaire" || role === "Secretaire") {
+          response = await getAllSeancesConduite(autoEcoleId);
+        } else {
+          response = await getPlanningMoniteur(userId);
+        }
 
         let seancesData = [];
         if (Array.isArray(response)) seancesData = response;
@@ -54,7 +66,7 @@ export const useSeancesConduite = (moniteurId) => {
         if (!isRefresh) setLoading(false);
       }
     },
-    [moniteurId],
+    [user],
   );
 
   useEffect(() => {
@@ -97,9 +109,15 @@ export const useSeancesConduite = (moniteurId) => {
       )
         return false;
 
+      // View Scope filter (All vs Mine)
+      if (viewScope === "mine") {
+        const userId = user?.id || user?.user?.id;
+        if (seance.moniteurId !== userId) return false;
+      }
+
       return true;
     });
-  }, [seances, tabValue, searchTerm, dateFilter]);
+  }, [seances, tabValue, searchTerm, dateFilter, viewScope, user]);
 
   const counts = useMemo(() => {
     const now = startOfDay(new Date());
@@ -206,6 +224,8 @@ export const useSeancesConduite = (moniteurId) => {
     setSearchTerm,
     dateFilter,
     setDateFilter,
+    viewScope,
+    setViewScope,
     tabValue,
     setTabValue,
     counts,

@@ -569,17 +569,29 @@ const PlanningCalendar = ({
                             </Button>
                           )}
 
-                          {!seance.present && !seance.estAnnulee && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="success"
-                              startIcon={<CheckCircleIcon />}
-                              onClick={() => onMarquerPresence(seance.id, true)}
-                              sx={{ borderRadius: 2, textTransform: 'none' }}
-                            >
-                              Présent
-                            </Button>
+                          {!seance.estAnnulee && (
+                            <>
+                              <Button
+                                size="small"
+                                variant={seance.present === true ? "contained" : "outlined"}
+                                color="success"
+                                startIcon={<CheckCircleIcon />}
+                                onClick={() => onMarquerPresence(seance.id, true)}
+                                sx={{ borderRadius: 2, textTransform: 'none' }}
+                              >
+                                Présent
+                              </Button>
+                              <Button
+                                size="small"
+                                variant={seance.present === false ? "contained" : "outlined"}
+                                color="error"
+                                startIcon={<CancelIcon />}
+                                onClick={() => onMarquerPresence(seance.id, false)}
+                                sx={{ borderRadius: 2, textTransform: 'none' }}
+                              >
+                                Absent
+                              </Button>
+                            </>
                           )}
 
                           <Button
@@ -815,16 +827,29 @@ const PlanningCalendar = ({
                             Réactiver
                           </Button>
                         )}
-                        {!seance.present && !seance.estAnnulee && (
-                          <Button
-                            size="small"
-                            startIcon={<CheckCircleIcon />}
-                            variant="outlined"
-                            color="success"
-                            onClick={() => onMarquerPresence(seance.id, true)}
-                          >
-                            Présent
-                          </Button>
+                        {!seance.estAnnulee && (
+                          <>
+                            <Button
+                              size="small"
+                              variant={seance.present === true ? "contained" : "outlined"}
+                              color="success"
+                              startIcon={<CheckCircleIcon />}
+                              onClick={() => onMarquerPresence(seance.id, true)}
+                              sx={{ borderRadius: 2, textTransform: 'none' }}
+                            >
+                              Présent
+                            </Button>
+                            <Button
+                              size="small"
+                              variant={seance.present === false ? "contained" : "outlined"}
+                              color="error"
+                              startIcon={<CancelIcon />}
+                              onClick={() => onMarquerPresence(seance.id, false)}
+                              sx={{ borderRadius: 2, textTransform: 'none' }}
+                            >
+                              Absent
+                            </Button>
+                          </>
                         )}
                         <Button
                           size="small"

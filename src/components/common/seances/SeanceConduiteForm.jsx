@@ -144,7 +144,12 @@ const SeanceConduiteForm = ({
       setError("La durée doit être d'au moins 30 minutes");
       return;
     }
-    if (!moniteurId) {
+    const selectedCandidat = candidats.find(
+      (c) => c.contratId.toString() === formData.contratId.toString(),
+    );
+    const targetMoniteurId = selectedCandidat?.moniteurId || moniteurId;
+
+    if (!targetMoniteurId) {
       setError("Moniteur non défini pour planifier la séance");
       return;
     }
@@ -159,7 +164,7 @@ const SeanceConduiteForm = ({
       dureeMinutes: parseInt(formData.dureeMinutes),
       typeConduite: parseInt(formData.typeConduite),
       contratId: parseInt(formData.contratId), // Utiliser contratId au lieu de candidatId
-      moniteurId: parseInt(moniteurId),
+      moniteurId: parseInt(targetMoniteurId),
     };
 
     console.log("Soumission séance (mode simple):", submitData);
@@ -220,7 +225,12 @@ const SeanceConduiteForm = ({
     if (!seance.dureeMinutes || seance.dureeMinutes < 30) {
       return "La durée doit être d'au moins 30 minutes";
     }
-    if (!moniteurId) {
+    const selectedCandidat = candidats.find(
+      (c) => c.contratId.toString() === seance.contratId.toString(),
+    );
+    const targetMoniteurId = selectedCandidat?.moniteurId || moniteurId;
+
+    if (!targetMoniteurId) {
       return "Moniteur non défini pour planifier les séances";
     }
     return null;
@@ -240,14 +250,20 @@ const SeanceConduiteForm = ({
     onClearMessageError?.();
 
     // Format data for batch submission with contratId
-    const submitData = seances.map((seance) => ({
-      date: seance.date.toISOString(),
-      heureDebut: seance.heureDebut,
-      dureeMinutes: parseInt(seance.dureeMinutes),
-      typeConduite: parseInt(seance.typeConduite),
-      contratId: parseInt(seance.contratId), // Utiliser contratId
-      moniteurId: parseInt(moniteurId),
-    }));
+    const submitData = seances.map((seance) => {
+      const selectedCandidat = candidats.find(
+        (c) => c.contratId.toString() === seance.contratId.toString(),
+      );
+      const targetMoniteurId = selectedCandidat?.moniteurId || moniteurId;
+      return {
+        date: seance.date.toISOString(),
+        heureDebut: seance.heureDebut,
+        dureeMinutes: parseInt(seance.dureeMinutes),
+        typeConduite: parseInt(seance.typeConduite),
+        contratId: parseInt(seance.contratId), // Utiliser contratId
+        moniteurId: parseInt(targetMoniteurId),
+      };
+    });
 
     console.log("Soumission batch séances:", submitData);
 
@@ -353,21 +369,30 @@ const SeanceConduiteForm = ({
         </FormControl>
 
         {/* Candidat */}
-        <FormControl fullWidth required>
-          <InputLabel>Candidat</InputLabel>
-          <Select
-            value={formData.candidatId}
+        {initialData ? (
+          <TextField
+            fullWidth
             label="Candidat"
-            onChange={(e) => handleCandidatChange(e.target.value)}
-          >
-            {candidats.map((candidat) => (
-              <MenuItem key={candidat.id} value={candidat.id.toString()}>
-                {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
-                {candidat.contratId && ` (Contrat #${candidat.contratId})`}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            value={`${initialData.candidatPrenom || ''} ${initialData.candidatNom || ''}`.trim() || `Candidat #${initialData.candidatId}`}
+            disabled
+          />
+        ) : (
+          <FormControl fullWidth required>
+            <InputLabel>Candidat</InputLabel>
+            <Select
+              value={formData.candidatId}
+              label="Candidat"
+              onChange={(e) => handleCandidatChange(e.target.value)}
+            >
+              {candidats.map((candidat) => (
+                <MenuItem key={candidat.id} value={candidat.id.toString()}>
+                  {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
+                  {candidat.contratId && ` (Contrat #${candidat.contratId})`}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Stack>
     </LocalizationProvider>
   );
@@ -475,27 +500,37 @@ const SeanceConduiteForm = ({
 
               {/* Candidat - appliqué à toutes les séances */}
               {seances.length > 0 && index === 0 && (
-                <FormControl fullWidth required size="small">
-                  <InputLabel>Candidat</InputLabel>
-                  <Select
-                    value={seance.candidatId}
+                initialData ? (
+                  <TextField
+                    fullWidth
                     label="Candidat"
-                    onChange={(e) =>
-                      handleMultipleCandidatChange(e.target.value)
-                    }
-                  >
-                    {candidats.map((candidat) => (
-                      <MenuItem
-                        key={candidat.id}
-                        value={candidat.id.toString()}
-                      >
-                        {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
-                        {candidat.contratId &&
-                          ` (Contrat #${candidat.contratId})`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    size="small"
+                    value={`${initialData.candidatPrenom || ''} ${initialData.candidatNom || ''}`.trim() || `Candidat #${initialData.candidatId}`}
+                    disabled
+                  />
+                ) : (
+                  <FormControl fullWidth required size="small">
+                    <InputLabel>Candidat</InputLabel>
+                    <Select
+                      value={seance.candidatId}
+                      label="Candidat"
+                      onChange={(e) =>
+                        handleMultipleCandidatChange(e.target.value)
+                      }
+                    >
+                      {candidats.map((candidat) => (
+                        <MenuItem
+                          key={candidat.id}
+                          value={candidat.id.toString()}
+                        >
+                          {candidat.prenom} {candidat.nom} - {candidat.numeroCIN}
+                          {candidat.contratId &&
+                            ` (Contrat #${candidat.contratId})`}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )
               )}
             </Stack>
             {index < seances.length - 1 && <Divider sx={{ mt: 2 }} />}
@@ -530,7 +565,14 @@ const SeanceConduiteForm = ({
             {error ? <Alert severity="error">{error}</Alert> : null}
           </Stack>
         )}
-        {multiple ? renderMultipleMode() : renderSimpleMode()}
+        
+        {candidats.length === 0 && !initialData ? (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+         Aucun candidat n’est actuellement affecté à votre compte. 
+          </Alert>
+        ) : (
+          multiple ? renderMultipleMode() : renderSimpleMode()
+        )}
       </DialogContent>
 
       <DialogActions>
@@ -540,7 +582,7 @@ const SeanceConduiteForm = ({
         <Button
           onClick={multiple ? handleMultipleSubmit : handleSimpleSubmit}
           variant="contained"
-          disabled={loading}
+          disabled={loading || (candidats.length === 0 && !initialData)}
         >
           {loading ? (
             <CircularProgress size={24} />

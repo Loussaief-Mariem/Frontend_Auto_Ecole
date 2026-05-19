@@ -23,6 +23,7 @@ export const useSeancesCode = (user) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
+  const [viewScope, setViewScope] = useState("all"); // all, mine
   const [tabValue, setTabValue] = useState(0); // 0: Upcoming, 1: Past, 2: Cancelled
 
   const loadSeances = useCallback(
@@ -94,9 +95,15 @@ export const useSeancesCode = (user) => {
       )
         return false;
 
+      // View Scope filter (All vs Mine)
+      if (viewScope === "mine") {
+        const currentUserId = user?.user?.id || user?.id;
+        if (seance.secretaireId !== currentUserId) return false;
+      }
+
       return true;
     });
-  }, [seances, tabValue, searchTerm, dateFilter]);
+  }, [seances, tabValue, searchTerm, dateFilter, viewScope, user]);
 
   const counts = useMemo(() => {
     const now = startOfDay(new Date());
@@ -135,6 +142,8 @@ export const useSeancesCode = (user) => {
     setSearchTerm,
     dateFilter,
     setDateFilter,
+    viewScope,
+    setViewScope,
     tabValue,
     setTabValue,
     counts,

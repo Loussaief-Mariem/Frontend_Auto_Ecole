@@ -76,7 +76,7 @@ const validateForm = (form) => {
   return errors;
 };
 
-const AddUser = () => {
+const AddUser = ({ onSuccess: onAddSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -195,6 +195,10 @@ const AddUser = () => {
       }
 
       console.log("Full response:", res);
+      
+      if (onAddSuccess) {
+        onAddSuccess();
+      }
 
       // Reset form on success
       setForm({
@@ -256,21 +260,7 @@ const AddUser = () => {
   };
 
   return (
-    <Stack
-      spacing={3}
-      sx={{
-        maxWidth: 500,
-        margin: "0 auto",
-        p: 3,
-        bgcolor: "background.paper",
-        borderRadius: 3,
-        boxShadow: 1,
-      }}
-    >
-      <Typography variant="h5" fontWeight={700}>
-        Ajouter Utilisateur
-      </Typography>
-
+    <Stack spacing={3} sx={{ pt: 1, pb: 2 }}>
       {/* Error Message */}
       {error && (
         <Alert severity="error" onClose={() => setError(null)}>

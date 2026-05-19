@@ -16,8 +16,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import PlanningGlobalPage from "../PlanningGlobalPage";
 
 import { useAuth } from "../../../context/AuthContext";
 import { useSeancesCode } from "../../../hooks/useSeancesCode";
@@ -36,6 +40,8 @@ const PlanningSeancesPage = () => {
     setSearchTerm,
     dateFilter,
     setDateFilter,
+    viewScope,
+    setViewScope,
     tabValue,
     setTabValue,
     counts,
@@ -45,6 +51,7 @@ const PlanningSeancesPage = () => {
   } = useSeancesCode(user);
 
   const [openPlanifier, setOpenPlanifier] = useState(false);
+  const [openGlobalCalendar, setOpenGlobalCalendar] = useState(false);
   const [selectedSeanceToEdit, setSelectedSeanceToEdit] = useState(null);
   const [openParticipants, setOpenParticipants] = useState(false);
   const [selectedSeanceId, setSelectedSeanceId] = useState(null);
@@ -140,8 +147,7 @@ const PlanningSeancesPage = () => {
             Gérez et planifiez vos sessions de code théorique
           </Typography>
         </Box>
-        
-        <Box>
+        <Box display="flex" gap={2}>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -203,10 +209,11 @@ const PlanningSeancesPage = () => {
 
       {/* Filters Section */}
       <SeanceFilters 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm}
         dateFilter={dateFilter}
         setDateFilter={setDateFilter}
+        viewScope={viewScope}
+        setViewScope={setViewScope}
+        showScopeFilter={user?.role === "Secretaire"}
       />
 
       {error && (
@@ -247,6 +254,25 @@ const PlanningSeancesPage = () => {
         autoEcoleId={user?.user?.idAutoEcole || user?.autoEcoleId}
         onRefresh={() => refresh(true)}
       />
+
+      {/* Global Calendar Dialog */}
+      <Dialog 
+        open={openGlobalCalendar} 
+        onClose={() => setOpenGlobalCalendar(false)} 
+        maxWidth="xl" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: 4, bgcolor: '#f8fafc' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
+          <Typography variant="h5" fontWeight="800">Calendrier Global</Typography>
+          <IconButton onClick={() => setOpenGlobalCalendar(false)}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <PlanningGlobalPage />
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <Dialog

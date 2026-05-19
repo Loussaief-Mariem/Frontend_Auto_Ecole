@@ -799,6 +799,7 @@ console.log("profile", profile)
 
   const addr = adresse || {};
   const cpt = compte || {};
+  const isCompteInactif = cpt.etat === 1 || cpt.Etat === 1;
 
   const dateNaissanceRaw =
     profile.dateNaissance ?? profile.DateNaissance ?? null;
@@ -1410,6 +1411,7 @@ console.log("profile", profile)
               <PaiementSection
                 tousContrats={profile.tousLesContrats}
                 onPaiementAdded={refreshData}
+                candidatInactif={isCompteInactif}
               />
             ) : (
               <Alert severity="info">
@@ -1458,6 +1460,7 @@ console.log("profile", profile)
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={() => setExamenFormOpen(true)}
+                disabled={isCompteInactif}
               >
                 Programmer un examen
               </Button>

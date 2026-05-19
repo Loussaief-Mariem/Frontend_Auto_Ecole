@@ -23,7 +23,7 @@ export const useSeancesGlobales = (user) => {
       let codeData = [];
       let conduiteData = [];
 
-      // Fetch Code Sessions (for Proprietaire and Secretaire)
+      // Fetch Code Sessions (only for Proprietaire and Secretaire)
       if (role === "Proprietaire" || role === "Secretaire") {
         const resCode = await getSeancesByAutoEcole(autoEcoleId);
         if (Array.isArray(resCode)) codeData = resCode;
@@ -32,17 +32,20 @@ export const useSeancesGlobales = (user) => {
         
         // Add type for differentiation
         codeData = codeData.map(s => ({ ...s, globalType: "code" }));
+
+        // Filter only own sessions if secretary
+        if (role === "Secretaire") {
+          codeData = codeData.filter(s => s.secretaireId === userId);
+        }
       }
 
-      // Fetch Conduite Sessions
-      if (role === "Proprietaire" || role === "Secretaire") {
-        // Proprietaire and Secretaire can see all auto-ecole sessions
+      // Fetch Conduite Sessions (only for Proprietaire and Moniteur)
+      if (role === "Proprietaire") {
         const resConduite = await getAllSeancesConduite(autoEcoleId);
         if (Array.isArray(resConduite)) conduiteData = resConduite;
         else if (resConduite?.data && Array.isArray(resConduite.data)) conduiteData = resConduite.data;
         else if (resConduite?.data?.data && Array.isArray(resConduite.data.data)) conduiteData = resConduite.data.data;
       } else if (role === "Moniteur") {
-        // Moniteur only sees their own conduite sessions
         const resConduite = await getPlanningMoniteur(userId);
         if (Array.isArray(resConduite)) conduiteData = resConduite;
         else if (resConduite?.data && Array.isArray(resConduite.data)) conduiteData = resConduite.data;

@@ -92,10 +92,11 @@ const CandidatsListPage = () => {
     return <Chip size="small" color={config.color} label={config.label} />;
   };
 
-  const getSoldeChip = (estSolde) => {
-    if (estSolde === true) return <Chip size="small" color="success" label="Soldé" />;
-    if (estSolde === false) return <Chip size="small" color="warning" label="Non Soldé" />;
-    return null;
+  const getSoldeChip = (etatPaiement) => {
+    if (etatPaiement === 2) return <Chip size="small" color="success" label="Soldé" />;
+    if (etatPaiement === 1) return <Chip size="small" color="warning" label="Partiel" />;
+    if (etatPaiement === 0) return "-";
+    return "-";
   };
 
   // Filtrage côté client
@@ -112,8 +113,8 @@ const CandidatsListPage = () => {
       if (statusFilter === "ContratActif") matchesStatus = candidat.etatContrat === 0;
       else if (statusFilter === "ContratTermine") matchesStatus = candidat.etatContrat === 1;
       else if (statusFilter === "ContratInterrompu") matchesStatus = candidat.etatContrat === 2;
-      else if (statusFilter === "Solde") matchesStatus = candidat.estSolde === true;
-      else if (statusFilter === "NonSolde") matchesStatus = candidat.estSolde === false;
+      else if (statusFilter === "Solde") matchesStatus = candidat.etatPaiement === 2;
+      else if (statusFilter === "NonSolde") matchesStatus = candidat.etatPaiement === 1 || candidat.etatPaiement === 0;
     }
 
     return matchesCompte && matchesSearch && matchesStatus;
@@ -121,11 +122,6 @@ const CandidatsListPage = () => {
 
   // Redirection selon le rôle
   const handleViewProfile = (id) => {
-    const cand = candidats.find(c => c.id === id);
-    if (cand && cand.compte?.etat === 1) {
-      alert("Ce profil est inaccessible car le compte du candidat est inactif.");
-      return;
-    }
     const role = user?.role;
 
     if (role === "Secretaire") {
@@ -428,19 +424,16 @@ const CandidatsListPage = () => {
                       {getEtatContratChip(candidat.etatContrat)}
                     </TableCell>
                     <TableCell>
-                      {getSoldeChip(candidat.estSolde)}
+                      {getSoldeChip(candidat.etatPaiement)}
                     </TableCell>
                     <TableCell align="center">
-                      <Tooltip title={candidat.compte?.etat === 1 ? "Compte Inactif - Profil inaccessible" : "Voir profil"}>
-                        <span>
-                          <IconButton
-                            onClick={() => handleViewProfile(candidat.id)}
-                            color="primary"
-                            disabled={candidat.compte?.etat === 1}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </span>
+                      <Tooltip title="Voir profil">
+                        <IconButton
+                          onClick={() => handleViewProfile(candidat.id)}
+                          color="primary"
+                        >
+                          <ViewIcon />
+                        </IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>

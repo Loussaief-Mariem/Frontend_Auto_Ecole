@@ -350,11 +350,6 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
       return;
     }
 
-    if (formData.typeFormation === "") {
-      setError("Le type de formation est obligatoire");
-      return;
-    }
-
     setLoading(true);
     setError("");
 
@@ -653,53 +648,6 @@ const EditCandidatDialog = ({ open, onClose, candidat, onSave, onUploadPhoto }) 
                     placeholder="Ex: Tunisie"
                   />
                 </Grid>
-              </Grid>
-            </Box>
-
-            {/* Formation & Permis */}
-            <Box>
-              <Typography variant="h6" gutterBottom color="primary">
-                Formation & Permis
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Type de permis"
-                    name="typePermisCode"
-                    value={formData.typePermisCode || "B"}
-                    InputProps={{ readOnly: true }}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Type de formation</InputLabel>
-                    <Select
-                      name="typeFormation"
-                      value={
-                        formData.typeFormation === ""
-                          ? ""
-                          : formData.typeFormation
-                      }
-                      onChange={handleChange}
-                      label="Type de formation"
-                    >
-                      <MenuItem value="">Sélectionner</MenuItem>
-                      <MenuItem value={TypeFormation.Theorique}>
-                        Code seulement
-                      </MenuItem>
-                      <MenuItem value={TypeFormation.Pratique}>
-                        Conduite seulement
-                      </MenuItem>
-                      <MenuItem value={TypeFormation.Complet}>
-                        Formation complète
-                      </MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
               </Grid>
             </Box>
           </Stack>

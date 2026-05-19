@@ -8,7 +8,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Checkbox,
   Typography,
   Box,
   Divider,
@@ -18,6 +17,7 @@ import {
   TextField,
   Rating,
   Stack,
+  Avatar,
 } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import StarIcon from "@mui/icons-material/Star";
@@ -135,23 +135,55 @@ const PresenceDialog = ({ open, onClose, seance, onRefresh }) => {
             presences.map((p, index) => (
               <React.Fragment key={p.contratId}>
                 <ListItem
-                  button={canEdit}
-                  onClick={() => handleToggle(p.contratId)}
-                  disabled={!canEdit}
-                  sx={{ borderRadius: 2, mb: 0.5 }}
+                  sx={{ borderRadius: 2, mb: 0.5, py: 1 }}
                 >
-                  <Checkbox
-                    edge="start"
-                    checked={p.present}
-                    tabIndex={-1}
-                    disableRipple
-                    disabled={!canEdit}
-                  />
+                  <Avatar
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      mr: 2,
+                      bgcolor: p.present ? "success.light" : "error.light",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    {p.candidatPrenom?.[0]}
+                    {p.candidatNom?.[0]}
+                  </Avatar>
                   <ListItemText
                     primary={`${p.candidatPrenom} ${p.candidatNom}`}
                     secondary={p.present ? "Présent" : "Absent"}
-                    primaryTypographyProps={{ fontWeight: p.present ? "bold" : "normal" }}
+                    primaryTypographyProps={{ fontWeight: "bold" }}
                   />
+                  <Stack direction="row" spacing={1} sx={{ ml: 2 }}>
+                    <Button
+                      size="small"
+                      variant={p.present ? "contained" : "outlined"}
+                      color="success"
+                      onClick={() => {
+                        if (canEdit && !p.present) {
+                          handleToggle(p.contratId);
+                        }
+                      }}
+                      disabled={!canEdit}
+                      sx={{ textTransform: "none", borderRadius: 2, fontSize: "0.75rem", px: 1.5 }}
+                    >
+                      Présent
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={!p.present ? "contained" : "outlined"}
+                      color="error"
+                      onClick={() => {
+                        if (canEdit && p.present) {
+                          handleToggle(p.contratId);
+                        }
+                      }}
+                      disabled={!canEdit}
+                      sx={{ textTransform: "none", borderRadius: 2, fontSize: "0.75rem", px: 1.5 }}
+                    >
+                      Absent
+                    </Button>
+                  </Stack>
                 </ListItem>
 
                 <Collapse in={p.present} timeout="auto" unmountOnExit>
